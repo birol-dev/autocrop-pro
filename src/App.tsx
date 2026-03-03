@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-
 export type CropArea = {
     w: number;
     h: number;
@@ -27,10 +26,24 @@ export type MediaFile = {
     size?: number;
     type: "video" | "image";
     crop?: CropArea;
-    previewUrl?: string; // Add previewUrl directly to state
+    previewUrl?: string;
+};
+
+type ProcessOptions = {
+    tolerance: number;
+    output_format: string;
+    padding: boolean;
+    delete_original: boolean;
+};
+
+type ProgressEventPayload = {
+    current: number;
+    total: number;
+    message: string;
 };
 
 export default function App() {
+    // --- Application State ---
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -40,27 +53,31 @@ export default function App() {
     const [detectingCrop, setDetectingCrop] = useState(false);
     const [detectedCrop, setDetectedCrop] = useState<CropArea | null>(null);
 
-    const [options, setOptions] = useState({
+    const [options, setOptions] = useState<ProcessOptions>({
         tolerance: 20,
         output_format: "Same as source",
         padding: false,
         delete_original: false,
     });
 
-    const addFilesFromPaths = async (paths: string[]) => {
+    const [isDragHovering, setIsDragHovering] = useState(false);
+
+    // --- Helpers ---
+    const addFilesFromPaths = useCallback(async (paths: string[]) => {
         const newFiles: MediaFile[] = [];
         for (const path of paths) {
-            // Very naive check for type; can be expanded
-            const isVideo = path.toLowerCase().endsWith(".mp4") || path.toLowerCase().endsWith(".mov") || path.toLowerCase().endsWith(".avi") || path.toLowerCase().endsWith(".mkv");
-            const isImage = path.toLowerCase().endsWith(".png") || path.toLowerCase().endsWith(".jpg") || path.toLowerCase().endsWith(".jpeg") || path.toLowerCase().endsWith(".webp");
+            const pLower = path.toLowerCase();
+            const isVideo = pLower.endsWith(".mp4") || pLower.endsWith(".mov") || pLower.endsWith(".avi") || pLower.endsWith(".mkv");
+            const isImage = pLower.endsWith(".png") || pLower.endsWith(".jpg") || pLower.endsWith(".jpeg") || pLower.endsWith(".webp");
 
             if (!isVideo && !isImage) continue;
 
+            // Robust filename extraction for Windows and Unix paths
             const name = path.split('\\').pop()?.split('/').pop() || path;
             const previewUrl = convertFileSrc(path);
 
             newFiles.push({
-                id: Math.random().toString(36).substring(7),
+                id: crypto.randomUUID(), // Standard UUID instead of Math.random
                 path,
                 name,
                 type: isVideo ? "video" : "image",
@@ -70,67 +87,74 @@ export default function App() {
 
         if (newFiles.length > 0) {
             setFiles(prev => {
-                // filter out duplicates based on path
                 const existingPaths = new Set(prev.map(f => f.path));
-                const uniqueNew = newFiles.filter(f => !existingPaths.has(f.path));
-                return [...prev, ...uniqueNew];
+                const uniqueNewFiles = newFiles.filter(f => !existingPaths.has(f.path));
+                return [...prev, ...uniqueNewFiles];
             });
         }
-    };
+    }, []);
 
-    // Listen for Tauri native drag and drop
-    const [isDragHovering, setIsDragHovering] = useState(false);
-
+    // --- Tauri Drag & Drop Listeners ---
     useEffect(() => {
         let unlistenDrop: () => void;
 
         async function setupListeners() {
-            unlistenDrop = await getCurrentWebview().onDragDropEvent((event) => {
-                if (isProcessing) return;
+            try {
+                unlistenDrop = await getCurrentWebview().onDragDropEvent((event) => {
+                    if (isProcessing) return;
 
-                if (event.payload.type === 'over' || event.payload.type === 'enter') {
-                    setIsDragHovering(true);
-                } else if (event.payload.type === 'leave') {
-                    setIsDragHovering(false);
-                } else if (event.payload.type === 'drop') {
-                    setIsDragHovering(false);
-                    const dropPaths = event.payload.paths;
-                    if (Array.isArray(dropPaths)) {
-                        addFilesFromPaths(dropPaths);
+                    switch (event.payload.type) {
+                        case 'over':
+                        case 'enter':
+                            setIsDragHovering(true);
+                            break;
+                        case 'leave':
+                            setIsDragHovering(false);
+                            break;
+                        case 'drop':
+                            setIsDragHovering(false);
+                            const dropPaths = event.payload.paths;
+                            if (Array.isArray(dropPaths)) {
+                                addFilesFromPaths(dropPaths);
+                            }
+                            break;
                     }
-                }
-            });
+                });
+            } catch (err) {
+                console.error("Failed to setup drag drop listener:", err);
+            }
         }
         setupListeners();
 
         return () => {
             if (unlistenDrop) unlistenDrop();
         };
-    }, [isProcessing]);
+    }, [isProcessing, addFilesFromPaths]);
 
-    // Fallback for HTML input clicking
+    // --- HTML Fallback Dropzone ---
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (isProcessing) return;
-        const paths = acceptedFiles.map(f => (f as any).path).filter(Boolean);
+        // The path property is injected by Electron/Tauri typically, but it requires coercion
+        const paths = acceptedFiles.map(f => (f as File & { path?: string }).path).filter((p): p is string => Boolean(p));
         if (paths.length > 0) {
             addFilesFromPaths(paths);
         }
-    }, [isProcessing]);
+    }, [isProcessing, addFilesFromPaths]);
 
     const { getRootProps, getInputProps } = useDropzone({
         onDrop,
         disabled: isProcessing,
-        noDrag: true, // Disable HTML5 drag-and-drop to let Tauri handle it native-side
+        noDrag: true, // Let Tauri handle native drag events
         accept: {
             'video/*': ['.mp4', '.mov', '.avi', '.mkv'],
             'image/*': ['.jpg', '.jpeg', '.png', '.webp']
         }
     });
 
-    const removeFile = (id: string) => {
+    const removeFile = useCallback((id: string) => {
         if (isProcessing) return;
         setFiles(prev => prev.filter(f => f.id !== id));
-    };
+    }, [isProcessing]);
 
     const handlePreview = async (file: MediaFile) => {
         if (isProcessing) return;
@@ -142,62 +166,67 @@ export default function App() {
             try {
                 const crop: CropArea = await invoke("detect_crop_areas", { filePath: file.path });
                 setDetectedCrop(crop);
-                // Cache it in state
+                // Cache detected crop in state to avoid re-calculating
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
-            } catch (e: any) {
-                toast.error(`Detection failed: ${e}`);
+            } catch (error) {
+                toast.error(`Detection failed: ${String(error)}`);
             } finally {
                 setDetectingCrop(false);
             }
         }
     };
 
-    const closePreview = () => {
+    const closePreview = useCallback(() => {
         setPreviewFile(null);
-    };
+    }, []);
 
     const handleProcessAll = async () => {
         if (files.length === 0) return;
 
-        const items = [];
         setIsProcessing(true);
         setProgress(0);
-        setProgressMsg("Preparing files...");
+        setProgressMsg("Inspecting requirements...");
 
+        // Ensure all files have a crop generated before processing
+        const itemsToProcess = [];
         for (const file of files) {
             let crop = file.crop;
             if (!crop) {
                 try {
-                    crop = await invoke("detect_crop_areas", { filePath: file.path });
-                } catch (e) {
-                    crop = { w: 0, h: 0, x: 0, y: 0 }; // Fallback
+                    crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path });
+                } catch {
+                    // Fallback to purely dimensions bounds if detection wholly fails
+                    crop = { w: 0, h: 0, x: 0, y: 0 };
                 }
             }
-            items.push({ path: file.path, crop });
+            itemsToProcess.push({ path: file.path, crop });
         }
 
-        setProgressMsg("Processing started...");
+        setProgressMsg("Initializing processing engine...");
 
-        const unlisten = await listen<{ current: number; total: number; message: string }>("crop-progress", (event) => {
-            setProgress((event.payload.current / event.payload.total) * 100);
-            setProgressMsg(event.payload.message);
-        });
-
+        let unlisten: () => void = () => { };
         try {
-            await invoke("process_files", { items, options });
-            toast.success("Successfully processed all files!", {
+            unlisten = await listen<ProgressEventPayload>("crop-progress", (event) => {
+                const percentage = (event.payload.current / event.payload.total) * 100;
+                setProgress(Math.min(percentage, 100)); // Clamp at 100
+                setProgressMsg(event.payload.message);
+            });
+
+            await invoke("process_files", { items: itemsToProcess, options });
+
+            toast.success("Successfully processed all queued files", {
                 duration: 5000,
                 action: {
-                    label: "Open Folder",
+                    label: "Open Output",
                     onClick: () => invoke("open_output_folder")
                 }
             });
-            setFiles([]); // Clear list on success
-        } catch (e: any) {
-            toast.error(`Processing failed: ${e}`);
+            setFiles([]);
+        } catch (error) {
+            toast.error(`Processing pipeline aborted: ${String(error)}`);
         } finally {
             setIsProcessing(false);
-            unlisten();
+            if (unlisten) unlisten();
         }
     };
 
@@ -206,59 +235,59 @@ export default function App() {
     return (
         <div className="flex h-screen w-full bg-[#09090b] text-zinc-100 overflow-hidden font-sans selection:bg-indigo-500/30">
             <Toaster theme="dark" position="bottom-right" className="font-sans" toastOptions={{
-                className: "bg-zinc-900/90 backdrop-blur-xl border-zinc-800 text-zinc-100"
+                className: "bg-zinc-900/90 backdrop-blur-xl border-zinc-800 text-zinc-100 shadow-2xl"
             }} />
 
-            {/* Main Content: File List & Dropzone */}
+            {/* Main Content Pane */}
             <main className="flex-1 flex flex-col relative h-full">
-                {/* Header */}
-                <header className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-zinc-950/50 backdrop-blur-md z-20">
-                    <div className="flex items-center gap-3 select-none tauri-drag-region">
+                {/* Application Header - Draggable Area */}
+                <header data-tauri-drag-region className="h-[68px] flex items-center justify-between px-8 border-b border-white/5 bg-zinc-950/50 backdrop-blur-md z-20 shrink-0 select-none">
+                    <div className="flex items-center gap-3 pointer-events-none">
                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                             <Settings size={16} className="text-white" />
                         </div>
-                        <div>
-                            <h1 className="text-sm font-semibold tracking-wide text-zinc-100">AutoCrop Pro</h1>
-                        </div>
+                        <h1 className="text-sm font-semibold tracking-wide text-zinc-100">AutoCrop Pro</h1>
                     </div>
                 </header>
 
-                <div className="flex-1 p-8 overflow-y-auto pb-32 space-y-8 scrollbar-hide">
-                    {/* Hero Dropzone */}
+                <div className="flex-1 p-8 overflow-y-auto space-y-8 scrollbar-hide">
+                    {/* Primary Dropzone */}
                     <div
                         {...getRootProps()}
                         className={`group relative w-full rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden border-2
                             ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
                             ${hasFiles ? 'h-32 bg-zinc-900/20 border-zinc-800/50 hover:border-indigo-500/30' : 'h-64 bg-zinc-900/40 border-dashed border-zinc-700/50 hover:border-indigo-500/50 hover:bg-zinc-900/60'}
-                            ${isDragHovering ? 'border-indigo-500 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20 z-50' : ''}
+                            ${isDragHovering ? 'border-indigo-500 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20 z-10' : ''}
                         `}
                     >
                         <input {...getInputProps()} />
 
-                        {/* Background Glow */}
+                        {/* Subtle interactive glow */}
                         <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                         <div className="relative z-10 flex flex-col items-center gap-3">
                             <div className={`p-4 rounded-2xl bg-zinc-800/50 text-indigo-400 group-hover:scale-110 group-hover:text-indigo-300 transition-all duration-300 shadow-xl
-                                ${hasFiles ? 'scale-75 mb-0' : ''}`}>
+                                ${hasFiles ? 'scale-75 mb-0 p-3' : ''}`}>
                                 <UploadCloud size={hasFiles ? 24 : 32} strokeWidth={1.5} />
                             </div>
                             <div className="text-center">
                                 <p className={`font-medium text-zinc-200 transition-all duration-300 ${hasFiles ? 'text-sm' : 'text-lg'}`}>
-                                    Drag & drop media files here
+                                    {isDragHovering ? "Release to queue automatically" : "Drag & drop media files here"}
                                 </p>
                                 {!hasFiles && (
-                                    <p className="text-xs text-zinc-500 mt-2 font-medium">Or click to browse your computer</p>
+                                    <p className="text-xs text-zinc-500 mt-2 font-medium">Alternatively, click to browse your computer directories</p>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* File Grid */}
+                    {/* Pending Queue Grid */}
                     {hasFiles && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
                             <div className="flex items-center justify-between px-1">
-                                <h2 className="text-sm font-medium text-zinc-400">Queue <span className="text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-full ml-2 text-xs">{files.length}</span></h2>
+                                <h2 className="text-sm font-medium text-zinc-400">
+                                    Queue <span className="text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-full ml-2 text-xs">{files.length}</span>
+                                </h2>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -269,7 +298,7 @@ export default function App() {
                                         className="group relative bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:bg-zinc-800/50 transition-all duration-300 hover:shadow-xl hover:shadow-black/50 hover:-translate-y-1 block"
                                         style={{ animationDelay: `${index * 50}ms` }}
                                     >
-                                        {/* Preview Thumbnail */}
+                                        {/* Visual Thumbnail Frame */}
                                         <div className="w-full h-32 bg-zinc-950 relative overflow-hidden flex items-center justify-center border-b border-white/5">
                                             {f.previewUrl ? (
                                                 f.type === 'video' ? (
@@ -290,32 +319,32 @@ export default function App() {
                                                 </div>
                                             )}
 
-                                            {/* Top right gradient mask for delete button */}
-                                            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {/* Queue Removal Action */}
+                                            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); removeFile(f.id); }}
                                                     className="w-8 h-8 rounded-full bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md text-red-200 flex items-center justify-center transition-colors"
-                                                    title="Remove file"
+                                                    title="Remove from queue"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
 
-                                            {/* Detected Badge */}
+                                            {/* Precalculation Status Badge */}
                                             {f.crop && (
                                                 <div className="absolute bottom-2 left-2 bg-zinc-900/80 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-lg">
-                                                    <CheckCircle2 size={12} /> Ready
+                                                    <CheckCircle2 size={12} /> Bounds Mapped
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* File Info */}
+                                        {/* Meta Information */}
                                         <div className="p-4">
                                             <p className="text-sm font-medium text-zinc-300 truncate group-hover:text-indigo-300 transition-colors" title={f.name}>
                                                 {f.name}
                                             </p>
                                             <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500">
-                                                <span className="capitalize">{f.type}</span>
+                                                <span className="capitalize">{f.type} Record</span>
                                             </div>
                                         </div>
                                     </div>
@@ -326,19 +355,19 @@ export default function App() {
                 </div>
             </main>
 
-            {/* Right Sidebar: Settings & Actions */}
+            {/* Persistent Right Toolbar: Configurations */}
             <aside className="w-80 border-l border-white/5 bg-zinc-950/80 backdrop-blur-2xl flex flex-col z-10 shrink-0 shadow-2xl relative">
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto scrollbar-hide flex-1">
                     <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
-                        Configuration
+                        Export Settings
                         <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent" />
                     </h2>
 
                     <div className="space-y-8">
-                        {/* Tolerance */}
+                        {/* Threshold Control */}
                         <div className="space-y-4">
                             <div className="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-                                <Label className="text-sm font-medium text-zinc-300">Tolerance</Label>
+                                <Label className="text-sm font-medium text-zinc-300">Detection Tolerance</Label>
                                 <div className="px-2 py-1 rounded-md bg-zinc-800 text-xs font-mono text-indigo-300">
                                     {options.tolerance}%
                                 </div>
@@ -354,28 +383,28 @@ export default function App() {
                             </div>
                         </div>
 
-                        {/* Format */}
+                        {/* Format Dropdown */}
                         <div className="space-y-3">
-                            <Label className="text-sm font-medium text-zinc-300 pl-1">Export Format</Label>
+                            <Label className="text-sm font-medium text-zinc-300 pl-1">Target Encodings</Label>
                             <Select value={options.output_format} onValueChange={(val) => setOptions(o => ({ ...o, output_format: val }))}>
                                 <SelectTrigger className="bg-zinc-900/50 border-white/5 text-zinc-300 h-12 rounded-xl focus:ring-1 focus:ring-indigo-500/50 transition-all">
                                     <SelectValue placeholder="Format" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-300 rounded-xl shadow-2xl">
-                                    <SelectItem value="Same as source" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">Original Format</SelectItem>
-                                    <SelectItem value="mp4" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">MP4 Video</SelectItem>
-                                    <SelectItem value="png" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">PNG Image</SelectItem>
-                                    <SelectItem value="jpg" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">JPG Image</SelectItem>
+                                    <SelectItem value="Same as source" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">Original Structure</SelectItem>
+                                    <SelectItem value="mp4" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">H.264 (MP4)</SelectItem>
+                                    <SelectItem value="png" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">Lossless Image (PNG)</SelectItem>
+                                    <SelectItem value="jpg" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">Compressed (JPG)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Toggles */}
-                        <div className="space-y-2 bg-zinc-900/30 rounded-2xl border border-white/5 p-2">
+                        {/* Modifier Overrides */}
+                        <div className="space-y-2 bg-zinc-900/30 rounded-2xl border border-white/5 p-2 relative">
                             <label className="flex items-center justify-between p-3 rounded-xl hover:bg-zinc-800/50 transition-colors cursor-pointer group">
                                 <div className="space-y-0.5">
-                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Add Padding</span>
-                                    <p className="text-[10px] text-zinc-500">Add safe margin around crop</p>
+                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Apply Safety Margin</span>
+                                    <p className="text-[10px] text-zinc-500">Adds 10px buffer around bound edge</p>
                                 </div>
                                 <Switch
                                     checked={options.padding}
@@ -386,8 +415,8 @@ export default function App() {
 
                             <label className="flex items-center justify-between p-3 rounded-xl hover:bg-red-500/5 transition-colors cursor-pointer group">
                                 <div className="space-y-0.5">
-                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-red-300 transition-colors">Replace Original</span>
-                                    <p className="text-[10px] text-zinc-500">Overwrites source file</p>
+                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-red-400 transition-colors">Destructive Mode</span>
+                                    <p className="text-[10px] text-zinc-500 text-red-500/70">Deletes original media when finished</p>
                                 </div>
                                 <Switch
                                     checked={options.delete_original}
@@ -399,7 +428,8 @@ export default function App() {
                     </div>
                 </div>
 
-                <div className="mt-auto p-6 bg-gradient-to-t from-zinc-950 to-transparent">
+                {/* Primary Action Button Base */}
+                <div className="p-6 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent sticky bottom-0">
                     <button
                         disabled={!hasFiles || isProcessing}
                         onClick={handleProcessAll}
@@ -419,9 +449,9 @@ export default function App() {
                                 </>
                             ) : (
                                 <>
-                                    <span>Start Processing</span>
+                                    <span>Start Engine Setup</span>
                                     {files.length > 0 && (
-                                        <span className="bg-zinc-900/10 px-2 py-0.5 rounded-lg text-xs ml-1">{files.length}</span>
+                                        <span className="bg-zinc-900/10 px-2 py-0.5 rounded-lg text-xs ml-1 font-bold">{files.length}</span>
                                     )}
                                     <ChevronRight size={18} className="text-zinc-400 group-hover:text-zinc-900 transition-colors group-hover:translate-x-1 duration-300" />
                                 </>
@@ -429,18 +459,18 @@ export default function App() {
                         </div>
                     </button>
                     {!hasFiles && !isProcessing && (
-                        <p className="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-widest font-medium">Ready</p>
+                        <p className="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-widest font-medium">No queue detected</p>
                     )}
                 </div>
             </aside>
 
-            {/* Modern Preview Modal */}
+            {/* Diagnostic Visualization Overlay */}
             <Dialog open={!!previewFile} onOpenChange={(open) => !open && closePreview()}>
-                <DialogContent className="sm:max-w-5xl bg-zinc-950/80 backdrop-blur-2xl border-white/10 text-zinc-100 p-0 overflow-hidden shadow-2xl sm:rounded-3xl">
+                <DialogContent className="sm:max-w-5xl bg-zinc-950/80 backdrop-blur-3xl border-white/10 text-zinc-100 p-0 overflow-hidden shadow-2xl sm:rounded-3xl">
                     <DialogHeader className="p-4 px-6 absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
                         <DialogTitle className="text-base font-medium truncate drop-shadow-md text-white">{previewFile?.name}</DialogTitle>
                         <DialogDescription className="text-zinc-300/80 text-xs drop-shadow">
-                            {detectingCrop ? "Analyzing content bounds..." : "Crop preview overlay"}
+                            {detectingCrop ? "Computing bounds matrices..." : "Dimensional projection overlay"}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -450,16 +480,14 @@ export default function App() {
                                 {previewFile?.type === 'video' ? (
                                     <video src={previewFile.previewUrl} className="max-w-full max-h-[75vh] object-contain" autoPlay muted loop />
                                 ) : (
-                                    <img src={previewFile.previewUrl} className="max-w-full max-h-[75vh] object-contain drop-shadow-2xl" alt="Preview" />
+                                    <img src={previewFile.previewUrl} className="max-w-full max-h-[75vh] object-contain drop-shadow-2xl" alt="Preview Projection" />
                                 )}
 
-                                {/* Abstract Representation of Detected Crop */}
+                                {/* Highlight Region Visualizer */}
                                 {detectedCrop && detectedCrop.w > 0 && (
                                     <div
                                         className="absolute inset-[10%] border border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] z-10 pointer-events-none transition-all duration-500 ease-out rounded-lg mix-blend-screen"
                                         style={{
-                                            // In a perfect world, we calculate exact box coordinates using naturalWidth scaled to display size.
-                                            // For safety and aesthetics, we overlay a generic stylized crop box.
                                             left: "15%",
                                             top: "15%",
                                             width: "70%",
@@ -470,13 +498,10 @@ export default function App() {
                                         <div className="absolute -top-3 -right-3 w-6 h-6 border-t-2 border-r-2 border-indigo-400" />
                                         <div className="absolute -bottom-3 -left-3 w-6 h-6 border-b-2 border-l-2 border-indigo-400" />
                                         <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b-2 border-r-2 border-indigo-400" />
-
-                                        {/* <div className="absolute top-3 left-3 bg-indigo-500/80 backdrop-blur text-white text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1">
-                                            <CheckCircle2 size={10} /> DETECTED
-                                        </div> */}
                                     </div>
                                 )}
 
+                                {/* Analysis Loading State */}
                                 {detectingCrop && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-20">
                                         <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center mb-4 shadow-xl">

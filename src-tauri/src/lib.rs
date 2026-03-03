@@ -1,9 +1,11 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use tauri::Emitter;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc;
+use tauri::{Emitter, Window};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CropArea {
     w: u32,
     h: u32,
@@ -11,7 +13,7 @@ pub struct CropArea {
     y: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ProcessOptions {
     pub tolerance: i32,
     pub output_format: String,
@@ -19,13 +21,13 @@ pub struct ProcessOptions {
     pub delete_original: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ProcessItem {
     pub path: String,
     pub crop: CropArea,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ProgressEvent {
     pub current: usize,
     pub total: usize,
@@ -38,11 +40,11 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
     let ext = path
         .extension()
         .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_lowercase();
+        .map(|s| s.to_lowercase())
+        .unwrap_or_default();
 
-    if ext == "mp4" || ext == "mov" || ext == "avi" || ext == "mkv" {
-        // Run FFmpeg
+    if matches!(ext.as_str(), "mp4" | "mov" | "avi" | "mkv") {
+        // Exploit FFmpeg to identify video crop boundaries automatically
         let output = std::process::Command::new("ffmpeg")
             .args([
                 "-i",
@@ -61,12 +63,7 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let re = regex::Regex::new(r"crop=(\d+):(\d+):(\d+):(\d+)").unwrap();
 
-        let mut best_crop = CropArea {
-            w: 0,
-            h: 0,
-            x: 0,
-            y: 0,
-        };
+        let mut best_crop = CropArea { w: 0, h: 0, x: 0, y: 0 };
         for cap in re.captures_iter(&stderr) {
             best_crop.w = cap[1].parse().unwrap_or(0);
             best_crop.h = cap[2].parse().unwrap_or(0);
@@ -76,7 +73,7 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
 
         Ok(best_crop)
     } else {
-        // Image processing
+        // Image Processing: identify black border thresholds
         let img = image::open(&file_path)
             .map_err(|e| e.to_string())?
             .to_rgb8();
@@ -88,31 +85,18 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
         let mut max_y = 0;
 
         for (x, y, pixel) in img.enumerate_pixels() {
-            // simple threshold for black
+            // Using extremely simplistic visual thresholding for 'black'
             if pixel[0] > 10 || pixel[1] > 10 || pixel[2] > 10 {
-                if x < min_x {
-                    min_x = x;
-                }
-                if x > max_x {
-                    max_x = x;
-                }
-                if y < min_y {
-                    min_y = y;
-                }
-                if y > max_y {
-                    max_y = y;
-                }
+                min_x = min_x.min(x);
+                max_x = max_x.max(x);
+                min_y = min_y.min(y);
+                max_y = max_y.max(y);
             }
         }
 
         if min_x > max_x {
-            // all black image
-            return Ok(CropArea {
-                w: width,
-                h: height,
-                x: 0,
-                y: 0,
-            });
+            // Failsafe for entirely pure black images
+            return Ok(CropArea { w: width, h: height, x: 0, y: 0 });
         }
 
         Ok(CropArea {
@@ -126,45 +110,44 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
 
 #[tauri::command]
 async fn process_files(
-    window: tauri::Window,
+    window: Window,
     items: Vec<ProcessItem>,
     options: ProcessOptions,
 ) -> Result<(), String> {
     let output_dir = dirs::document_dir()
-        .ok_or("Could not find Documents folder")?
+        .ok_or("Could not find system Documents folder")?
         .join("AutoCrop_Output");
 
     std::fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
 
     let total = items.len();
-    let current_completed = std::sync::atomic::AtomicUsize::new(0);
+    let current_completed = AtomicUsize::new(0);
 
-    // Process items in parallel over Rayon threadpool
-    // We use a channel to collect errors from across threads, since we must return via Result eventually
-    let (tx, rx) = std::sync::mpsc::channel();
+    // Multithreaded execution across tasks using Rayon
+    let (tx, rx) = mpsc::channel();
 
     items.into_par_iter().for_each_with(tx, |tx, item| {
         let path = Path::new(&item.path);
         let ext = path
             .extension()
             .and_then(|s| s.to_str())
-            .unwrap_or("")
-            .to_lowercase();
+            .map(|s| s.to_lowercase())
+            .unwrap_or_default();
+            
         let filename = path
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("output");
 
-        let out_ext =
-            if options.output_format == "Same as source" || options.output_format.is_empty() {
-                ext.clone()
-            } else {
-                options.output_format.to_lowercase()
-            };
+        let out_ext = if options.output_format == "Same as source" || options.output_format.is_empty() {
+            ext.clone()
+        } else {
+            options.output_format.to_lowercase()
+        };
 
         let out_path = output_dir.join(format!("{}_cropped.{}", filename, out_ext));
 
-        // Add padding if requested
+        // Inject intentional buffer margins around crops
         let mut crop = item.crop.clone();
         if options.padding {
             let pad_val = 10;
@@ -175,11 +158,10 @@ async fn process_files(
         }
 
         let crop_str = format!("{}:{}:{}:{}", crop.w, crop.h, crop.x, crop.y);
-        let mut success = true;
-        let mut err_msg = String::new();
+        let mut err_msg = None;
 
-        if ext == "mp4" || ext == "mov" || ext == "avi" || ext == "mkv" {
-            // Using `-copyts` and checking the Output response properly
+        if matches!(ext.as_str(), "mp4" | "mov" | "avi" | "mkv") {
+            // Apply FFmpeg video dimension filters directly
             match std::process::Command::new("ffmpeg")
                 .args([
                     "-y",
@@ -195,88 +177,64 @@ async fn process_files(
             {
                 Ok(output) => {
                     if !output.status.success() {
-                        success = false;
-                        err_msg =
-                            format!("FFmpeg failed: {}", String::from_utf8_lossy(&output.stderr));
+                        err_msg = Some(format!("FFmpeg failed: {}", String::from_utf8_lossy(&output.stderr)));
                     }
                 }
                 Err(e) => {
-                    success = false;
-                    err_msg = format!("FFmpeg execution failed: {}", e);
+                    err_msg = Some(format!("FFmpeg execution failed: {}", e));
                 }
             }
         } else {
-            // Image processing error handling
+            // Process static image arrays
             match image::open(&item.path) {
                 Ok(mut img) => {
                     let max_w = img.width().saturating_sub(crop.x);
                     let max_h = img.height().saturating_sub(crop.y);
-                    let final_w = if max_w == 0 {
-                        img.width()
-                    } else {
-                        crop.w.min(max_w)
-                    };
-                    let final_h = if max_h == 0 {
-                        img.height()
-                    } else {
-                        crop.h.min(max_h)
-                    };
+                    let final_w = if max_w == 0 { img.width() } else { crop.w.min(max_w) };
+                    let final_h = if max_h == 0 { img.height() } else { crop.h.min(max_h) };
 
                     if final_w > 0 && final_h > 0 {
-                        let cropped =
-                            image::imageops::crop(&mut img, crop.x, crop.y, final_w, final_h)
-                                .to_image();
+                        let cropped = image::imageops::crop(&mut img, crop.x, crop.y, final_w, final_h).to_image();
                         if let Err(e) = cropped.save(&out_path) {
-                            success = false;
-                            err_msg = format!("Failed to save cropped image: {}", e);
+                            err_msg = Some(format!("Failed to save cropped image: {}", e));
                         }
                     } else {
-                        success = false;
-                        err_msg = format!("Invalid crop bounds: {}x{}", final_w, final_h);
+                        err_msg = Some(format!("Invalid computed crop bounds: {}x{}", final_w, final_h));
                     }
                 }
                 Err(e) => {
-                    success = false;
-                    err_msg = format!("Failed to open original image {}: {}", &item.path, e);
+                    err_msg = Some(format!("Failed to open original image {}: {}", &item.path, e));
                 }
             }
         }
 
-        if success {
-            if options.delete_original {
-                let _ = std::fs::remove_file(&item.path);
-            }
-
-            let completed = current_completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
-            let _ = window.emit(
-                "crop-progress",
-                ProgressEvent {
-                    current: completed,
-                    total,
-                    message: format!("Processed {}", filename),
-                },
-            );
-        } else {
-            let _ = tx.send(err_msg.clone());
-            let completed = current_completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
-            let _ = window.emit(
-                "crop-progress",
-                ProgressEvent {
-                    current: completed,
-                    total,
-                    message: format!("Error processing {}: {}", filename, err_msg),
-                },
-            );
+        if err_msg.is_none() && options.delete_original {
+            let _ = std::fs::remove_file(&item.path);
         }
+
+        // Standardize event reporting back to frontend regardless of individual file success
+        let completed = current_completed.fetch_add(1, Ordering::SeqCst) + 1;
+        let event_message = match &err_msg {
+            Some(err) => {
+                let _ = tx.send(err.clone());
+                format!("Error processing {}: {}", filename, err)
+            },
+            None => format!("Processed {}", filename),
+        };
+
+        let _ = window.emit(
+            "crop-progress",
+            ProgressEvent {
+                current: completed,
+                total,
+                message: event_message,
+            },
+        );
     });
 
-    // Check if any thread reported an error
     let errors: Vec<String> = rx.into_iter().collect();
     if !errors.is_empty() {
-        return Err(format!(
-            "Errors occurred during processing:\n{}",
-            errors.join("\n")
-        ));
+        return Err(format!("Errors occurred during processing:\n{}", errors.join("\n")));
     }
 
     Ok(())
@@ -285,13 +243,25 @@ async fn process_files(
 #[tauri::command]
 fn open_output_folder() -> Result<(), String> {
     let output_dir = dirs::document_dir()
-        .ok_or("Could not find Documents folder")?
+        .ok_or("Could not find system Documents folder")?
         .join("AutoCrop_Output");
 
     std::fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
 
     #[cfg(target_os = "windows")]
     std::process::Command::new("explorer")
+        .arg(&output_dir)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    std::process::Command::new("open")
+        .arg(&output_dir)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "linux")]
+    std::process::Command::new("xdg-open")
         .arg(&output_dir)
         .spawn()
         .map_err(|e| e.to_string())?;

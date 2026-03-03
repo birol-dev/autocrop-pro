@@ -1,14 +1,12 @@
 [package]
 name = "app"
 version = "0.1.0"
-description = "A Tauri App"
+description = "AutoCrop Pro: A Tauri App"
 authors = ["you"]
 license = ""
 repository = ""
 edition = "2021"
 rust-version = "1.77.2"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 name = "app_lib"
@@ -29,3 +27,11 @@ image = "0.25"
 regex = "^1.11"
 dirs = "5.0"
 tauri-plugin-fs = "2"
+
+# Aggressive optimizations for the production build
+[profile.release]
+panic = "abort"      # Strip unwind tracing
+codegen-units = 1    # Allow maximum cross-crate optimizations
+lto = true           # Link Time Optimization
+opt-level = "s"      # Optimize for size
+strip = true         # Strip symbols from binary
