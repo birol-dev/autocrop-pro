@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { useDropzone, FileRejection } from "react-dropzone";
-import { Settings, Image as ImageIcon, Video, Trash2, FolderOpen, Play, CheckCircle2, ChevronDown, Check, X } from "lucide-react";
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { Settings, Image as ImageIcon, Video, Trash2, FolderOpen, Play } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Toaster, toast } from "sonner";
@@ -233,7 +233,7 @@ export default function App() {
                     >
                         {isProcessing ? (
                             <div className="flex flex-col items-center gap-1 w-full">
-                                <div className="text-xs animate-pulse">Processing... {Math.round(progress)}%</div>
+                                <div className="text-xs animate-pulse">{progressMsg || "Processing..."} {Math.round(progress)}%</div>
                                 <div className="w-full bg-indigo-900/50 rounded-full h-1.5 overflow-hidden">
                                     <div className="bg-white h-full transition-all duration-300" style={{ width: `${progress}%` }} />
                                 </div>
