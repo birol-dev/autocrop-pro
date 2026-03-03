@@ -194,8 +194,20 @@ async fn process_files(
                     let final_h = if max_h == 0 { img.height() } else { crop.h.min(max_h) };
 
                     if final_w > 0 && final_h > 0 {
+                        // Perform the crop on the dynamically loaded image
                         let cropped = image::imageops::crop(&mut img, crop.x, crop.y, final_w, final_h).to_image();
-                        if let Err(e) = cropped.save(&out_path) {
+                        
+                        // We must wrap the ImageBuffer back into a DynamicImage to leverage easy format conversions
+                        let dynamic_cropped = image::DynamicImage::ImageRgba8(cropped);
+
+                        // If the target format is JPEG, we MUST drop the Alpha channel (Rgba8 -> Rgb8)
+                        let save_result = if out_ext == "jpg" || out_ext == "jpeg" {
+                            dynamic_cropped.into_rgb8().save(&out_path)
+                        } else {
+                            dynamic_cropped.save(&out_path)
+                        };
+
+                        if let Err(e) = save_result {
                             err_msg = Some(format!("Failed to save cropped image: {}", e));
                         }
                     } else {
