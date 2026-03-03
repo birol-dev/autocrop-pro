@@ -35,7 +35,7 @@ pub struct ProgressEvent {
 }
 
 #[tauri::command]
-async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
+async fn detect_crop_areas(file_path: String, tolerance: f32) -> Result<CropArea, String> {
     let path = Path::new(&file_path);
     let ext = path
         .extension()
@@ -45,6 +45,8 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
 
     if matches!(ext.as_str(), "mp4" | "mov" | "avi" | "mkv") {
         // Exploit FFmpeg to identify video crop boundaries automatically
+        let limit = tolerance / 100.0;
+        let crop_filter = format!("cropdetect=limit={}:round=2", limit);
         let output = std::process::Command::new("ffmpeg")
             .args([
                 "-i",
@@ -52,7 +54,7 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
                 "-vframes",
                 "24",
                 "-vf",
-                "cropdetect",
+                &crop_filter,
                 "-f",
                 "null",
                 "-",
@@ -84,9 +86,11 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
         let mut max_x = 0;
         let mut max_y = 0;
 
+        let threshold = ((tolerance / 100.0) * 255.0) as u8;
+
         for (x, y, pixel) in img.enumerate_pixels() {
             // Using extremely simplistic visual thresholding for 'black'
-            if pixel[0] > 10 || pixel[1] > 10 || pixel[2] > 10 {
+            if pixel[0] > threshold || pixel[1] > threshold || pixel[2] > threshold {
                 min_x = min_x.min(x);
                 max_x = max_x.max(x);
                 min_y = min_y.min(y);
@@ -94,8 +98,8 @@ async fn detect_crop_areas(file_path: String) -> Result<CropArea, String> {
             }
         }
 
-        if min_x > max_x {
-            // Failsafe for entirely pure black images
+        if min_x > max_x || min_y > max_y {
+            // Failsafe for entirely pure blank images under threshold
             return Ok(CropArea { w: width, h: height, x: 0, y: 0 });
         }
 
@@ -145,7 +149,14 @@ async fn process_files(
             options.output_format.to_lowercase()
         };
 
-        let out_path = output_dir.join(format!("{}_cropped.{}", filename, out_ext));
+        let is_video = matches!(ext.as_str(), "mp4" | "mov" | "avi" | "mkv");
+        let safe_out_ext = if is_video {
+            if matches!(out_ext.as_str(), "mp4" | "mov" | "avi" | "mkv") { out_ext } else { ext.clone() }
+        } else {
+            if matches!(out_ext.as_str(), "mp4" | "mov" | "avi" | "mkv") { "png".to_string() } else { out_ext }
+        };
+
+        let out_path = output_dir.join(format!("{}_cropped.{}", filename, safe_out_ext));
 
         // Inject intentional buffer margins around crops
         let mut crop = item.crop.clone();
@@ -178,30 +189,34 @@ async fn process_files(
                 Ok(output) => {
                     if !output.status.success() {
                         err_msg = Some(format!("FFmpeg failed: {}", String::from_utf8_lossy(&output.stderr)));
+                        let _ = std::fs::remove_file(&out_path);
                     }
                 }
                 Err(e) => {
                     err_msg = Some(format!("FFmpeg execution failed: {}", e));
+                    let _ = std::fs::remove_file(&out_path);
                 }
             }
         } else {
             // Process static image arrays
             match image::open(&item.path) {
                 Ok(mut img) => {
-                    let max_w = img.width().saturating_sub(crop.x);
-                    let max_h = img.height().saturating_sub(crop.y);
-                    let final_w = if max_w == 0 { img.width() } else { crop.w.min(max_w) };
-                    let final_h = if max_h == 0 { img.height() } else { crop.h.min(max_h) };
+                    let safe_x = crop.x.min(img.width().saturating_sub(1));
+                    let safe_y = crop.y.min(img.height().saturating_sub(1));
+                    let max_w = img.width().saturating_sub(safe_x);
+                    let max_h = img.height().saturating_sub(safe_y);
+                    let final_w = if crop.w == 0 { max_w } else { crop.w.min(max_w) };
+                    let final_h = if crop.h == 0 { max_h } else { crop.h.min(max_h) };
 
                     if final_w > 0 && final_h > 0 {
                         // Perform the crop on the dynamically loaded image
-                        let cropped = image::imageops::crop(&mut img, crop.x, crop.y, final_w, final_h).to_image();
+                        let cropped = image::imageops::crop(&mut img, safe_x, safe_y, final_w, final_h).to_image();
                         
                         // We must wrap the ImageBuffer back into a DynamicImage to leverage easy format conversions
                         let dynamic_cropped = image::DynamicImage::ImageRgba8(cropped);
 
                         // If the target format is JPEG, we MUST drop the Alpha channel (Rgba8 -> Rgb8)
-                        let save_result = if out_ext == "jpg" || out_ext == "jpeg" {
+                        let save_result = if safe_out_ext == "jpg" || safe_out_ext == "jpeg" {
                             dynamic_cropped.into_rgb8().save(&out_path)
                         } else {
                             dynamic_cropped.save(&out_path)
@@ -209,6 +224,7 @@ async fn process_files(
 
                         if let Err(e) = save_result {
                             err_msg = Some(format!("Failed to save cropped image: {}", e));
+                            let _ = std::fs::remove_file(&out_path);
                         }
                     } else {
                         err_msg = Some(format!("Invalid computed crop bounds: {}x{}", final_w, final_h));

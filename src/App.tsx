@@ -151,6 +151,23 @@ export default function App() {
         }
     });
 
+    useEffect(() => {
+        // Invalidate cached crops when tolerance changes
+        setFiles(prev => prev.map(f => ({ ...f, crop: undefined })));
+
+        if (previewFile) {
+            setDetectingCrop(true);
+            invoke<CropArea>("detect_crop_areas", { filePath: previewFile.path, tolerance: options.tolerance })
+                .then(crop => {
+                    setDetectedCrop(crop);
+                    setFiles(prev => prev.map(f => f.id === previewFile.id ? { ...f, crop } : f));
+                })
+                .catch(err => toast.error(`Detection failed: ${String(err)}`))
+                .finally(() => setDetectingCrop(false));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [options.tolerance]);
+
     const removeFile = useCallback((id: string) => {
         if (isProcessing) return;
         setFiles(prev => prev.filter(f => f.id !== id));
@@ -164,7 +181,7 @@ export default function App() {
         if (!file.crop && file.path) {
             setDetectingCrop(true);
             try {
-                const crop: CropArea = await invoke("detect_crop_areas", { filePath: file.path });
+                const crop: CropArea = await invoke("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
                 setDetectedCrop(crop);
                 // Cache detected crop in state to avoid re-calculating
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
@@ -193,7 +210,7 @@ export default function App() {
             let crop = file.crop;
             if (!crop) {
                 try {
-                    crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path });
+                    crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
                 } catch {
                     // Fallback to purely dimensions bounds if detection wholly fails
                     crop = { w: 0, h: 0, x: 0, y: 0 };
