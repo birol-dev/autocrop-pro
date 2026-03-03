@@ -81,25 +81,45 @@ async fn detect_crop_areas(file_path: String, tolerance: f32) -> Result<CropArea
             .to_rgb8();
         let (width, height) = img.dimensions();
 
-        let mut min_x = width;
-        let mut min_y = height;
-        let mut max_x = 0;
-        let mut max_y = 0;
+        let mut row_counts = vec![0; height as usize];
+        let mut col_counts = vec![0; width as usize];
 
         let threshold = ((tolerance / 100.0) * 255.0) as u8;
 
         for (x, y, pixel) in img.enumerate_pixels() {
-            // Using extremely simplistic visual thresholding for 'black'
-            if pixel[0] > threshold || pixel[1] > threshold || pixel[2] > threshold {
-                min_x = min_x.min(x);
-                max_x = max_x.max(x);
-                min_y = min_y.min(y);
-                max_y = max_y.max(y);
+            // A pixel is 'content' if it is brighter than our tolerance threshold
+            // Using >= ensures a 100% tolerance (255 threshold) still targets pure white pixels
+            if pixel[0] >= threshold || pixel[1] >= threshold || pixel[2] >= threshold {
+                row_counts[y as usize] += 1;
+                col_counts[x as usize] += 1;
             }
         }
 
-        if min_x > max_x || min_y > max_y {
-            // Failsafe for entirely pure blank images under threshold
+        // Noise threshold: A row/col must have at least 0.5% content pixels to be kept
+        let noise_limit_x = (width as f32 * 0.005).max(1.0) as u32;
+        let noise_limit_y = (height as f32 * 0.005).max(1.0) as u32;
+
+        let mut min_x = 0;
+        let mut max_x = width.saturating_sub(1);
+        let mut min_y = 0;
+        let mut max_y = height.saturating_sub(1);
+
+        while min_x < max_x && col_counts[min_x as usize] < noise_limit_y {
+            min_x += 1;
+        }
+        while max_x > min_x && col_counts[max_x as usize] < noise_limit_y {
+            max_x -= 1;
+        }
+
+        while min_y < max_y && row_counts[min_y as usize] < noise_limit_x {
+            min_y += 1;
+        }
+        while max_y > min_y && row_counts[max_y as usize] < noise_limit_x {
+            max_y -= 1;
+        }
+
+        if min_x >= max_x || min_y >= max_y {
+            // Failsafe if the image was entirely stripped
             return Ok(CropArea { w: width, h: height, x: 0, y: 0 });
         }
 
