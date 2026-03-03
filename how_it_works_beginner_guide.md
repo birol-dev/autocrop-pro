@@ -56,6 +56,7 @@ Open your terminal, ensure you are in the root project directory, and run:
 ```bash
 npm run tauri build
 ```
+.
 *Wait patiently. Rust is compiling and heavily optimizing your code to ensure maximum performance and minimal executable size.*
 
 ### Step 2: Locate the Installers
