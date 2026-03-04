@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "native-windows-app",
+  "productName": "AutoCrop Pro",
   "version": "0.1.0",
   "identifier": "com.autocrop.app",
   "build": {
@@ -12,15 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "Auto-Crop Tauri",
-        "width": 800,
-        "height": 600,
+        "title": "AutoCrop Pro",
+        "width": 1100,
+        "height": 700,
         "resizable": true,
         "fullscreen": false
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' asset: http://asset.localhost https://asset.localhost; img-src 'self' data: asset: http://asset.localhost https://asset.localhost; media-src 'self' data: asset: http://asset.localhost https://asset.localhost;",
+      "csp": null,
       "assetProtocol": {
         "scope": [
           "**"
