@@ -46,7 +46,6 @@ fn crop_regex() -> &'static regex::Regex {
 }
 
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov", "avi", "mkv", "webm", "flv", "wmv"];
-const IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif"];
 
 fn get_extension(path: &Path) -> String {
     path.extension()
