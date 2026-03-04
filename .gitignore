@@ -25,3 +25,12 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+src-tauri/gen/schemas
+
+# Stray scratch/output files
+*.txt
+*.exe
+
+# OS
+Thumbs.db
+Desktop.ini
