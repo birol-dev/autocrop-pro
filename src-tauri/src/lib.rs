@@ -336,6 +336,57 @@ fn process_single_image(
     }
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct OutputFile {
+    pub name: String,
+    pub path: String,
+    pub file_type: String,
+}
+
+#[tauri::command]
+fn list_output_files() -> Result<Vec<OutputFile>, String> {
+    let output_dir = dirs::document_dir()
+        .ok_or("Could not find system Documents folder")?
+        .join("AutoCrop_Output");
+
+    if !output_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut files = Vec::new();
+    let entries = std::fs::read_dir(&output_dir).map_err(|e| e.to_string())?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+
+        let ext = get_extension(&path);
+        let file_type = if is_video(&ext) {
+            "video".to_string()
+        } else {
+            "image".to_string()
+        };
+
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        files.push(OutputFile {
+            name,
+            path: path.to_string_lossy().to_string(),
+            file_type,
+        });
+    }
+
+    // Sort by name
+    files.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(files)
+}
+
 #[tauri::command]
 fn open_output_folder() -> Result<(), String> {
     let output_dir = dirs::document_dir()
@@ -375,7 +426,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             detect_crop_areas,
             process_files,
-            open_output_folder
+            open_output_folder,
+            list_output_files
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
