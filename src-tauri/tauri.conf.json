@@ -22,8 +22,15 @@
     "security": {
       "csp": null,
       "assetProtocol": {
+        "enable": true,
         "scope": [
-          "**"
+          "**",
+          "$HOME/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**",
+          "$DESKTOP/**",
+          "$PICTURE/**",
+          "$VIDEO/**"
         ]
       }
     }
