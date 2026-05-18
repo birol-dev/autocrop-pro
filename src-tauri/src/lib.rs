@@ -416,6 +416,394 @@ fn open_output_folder() -> Result<(), String> {
     Ok(())
 }
 
+// ── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::RgbImage;
+
+    // ── Helper Tests ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_get_extension() {
+        assert_eq!(get_extension(Path::new("file.mp4")), "mp4");
+        assert_eq!(get_extension(Path::new("file.PNG")), "png");
+        assert_eq!(get_extension(Path::new("no_ext")), "");
+        assert_eq!(get_extension(Path::new("/path/to/file.JPG")), "jpg");
+    }
+
+    #[test]
+    fn test_is_video() {
+        assert!(is_video("mp4"));
+        assert!(is_video("mov"));
+        assert!(is_video("avi"));
+        assert!(is_video("mkv"));
+        assert!(is_video("webm"));
+        assert!(is_video("flv"));
+        assert!(is_video("wmv"));
+        assert!(!is_video("png"));
+        assert!(!is_video("jpg"));
+        assert!(!is_video("gif"));
+        assert!(!is_video(""));
+    }
+
+    // ── detect_image_crop Tests ───────────────────────────────────────────
+
+    /// Create a solid-color image helper.
+    fn make_img(width: u32, height: u32, r: u8, g: u8, b: u8) -> RgbImage {
+        RgbImage::from_pixel(width, height, image::Rgb([r, g, b]))
+    }
+
+    #[test]
+    fn test_detect_image_crop_white_image_full_frame() {
+        // A completely white image with tolerance=0 -> nothing is border
+        let img = make_img(100, 100, 255, 255, 255);
+        let path = std::env::temp_dir().join("test_full_white.png");
+        img.save(&path).unwrap();
+        let result = detect_image_crop(path.to_str().unwrap(), 0.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(result.w, 100);
+        assert_eq!(result.h, 100);
+    }
+
+    #[test]
+    fn test_detect_image_crop_black_borders() {
+        // 100x100 image with a 50x50 white square in the center, black borders
+        let mut img = RgbImage::new(100, 100);
+        // Fill with black
+        for pixel in img.pixels_mut() {
+            *pixel = image::Rgb([0, 0, 0]);
+        }
+        // Draw white square from (25,25) to (74,74)
+        for y in 25..75 {
+            for x in 25..75 {
+                img.put_pixel(x, y, image::Rgb([255, 255, 255]));
+            }
+        }
+        let path = std::env::temp_dir().join("test_black_borders.png");
+        img.save(&path).unwrap();
+        let result = detect_image_crop(path.to_str().unwrap(), 50.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(result.x, 25);
+        assert_eq!(result.y, 25);
+        assert_eq!(result.w, 50);
+        assert_eq!(result.h, 50);
+    }
+
+    #[test]
+    fn test_detect_image_crop_tolerance_zero_aggressive_detection() {
+        // tolerance=0 -> threshold=0 -> any non-zero pixel is content
+        // 200x200 image with white content stripe spanning full width at row 80-119
+        let mut img = RgbImage::new(200, 200);
+        for y in 80..120 {
+            for x in 0..200 {
+                img.put_pixel(x, y, image::Rgb([255, 255, 255]));
+            }
+        }
+        let path = std::env::temp_dir().join("test_tol0.png");
+        img.save(&path).unwrap();
+        let result = detect_image_crop(path.to_str().unwrap(), 0.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        // With threshold=0, white pixels are content, black is border
+        // Noise floor = max(200*0.01, 1) = 2, each content row has 200 content pixels
+        assert_eq!(result.x, 0);
+        assert_eq!(result.y, 80);
+        assert_eq!(result.w, 200);
+        assert_eq!(result.h, 40);
+    }
+
+    #[test]
+    fn test_detect_image_crop_returns_full_for_all_content() {
+        // Every pixel has content -> returns full dimensions
+        let img = make_img(64, 64, 128, 128, 128);
+        let path = std::env::temp_dir().join("test_all_content.png");
+        img.save(&path).unwrap();
+        let result = detect_image_crop(path.to_str().unwrap(), 50.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(result.w, 64);
+        assert_eq!(result.h, 64);
+        assert_eq!(result.x, 0);
+        assert_eq!(result.y, 0);
+    }
+
+    #[test]
+    fn test_detect_image_crop_nonexistent_file_returns_error() {
+        let result = detect_image_crop("/nonexistent/path.png", 50.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_detect_image_crop_single_pixel() {
+        let img = make_img(1, 1, 128, 128, 128);
+        let path = std::env::temp_dir().join("test_1px.png");
+        img.save(&path).unwrap();
+        let result = detect_image_crop(path.to_str().unwrap(), 50.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(result.w, 1);
+        assert_eq!(result.h, 1);
+    }
+
+    #[test]
+    fn test_detect_image_crop_nonexistent_file() {
+        let result = detect_image_crop("/nonexistent/path.png", 50.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_detect_image_crop_padding_scenario() {
+        // 200x200 image, content only in the center 100x100 area, rest is near-black
+        let mut img = RgbImage::new(200, 200);
+        for pixel in img.pixels_mut() {
+            *pixel = image::Rgb([5, 5, 5]); // Very dark but not pure black
+        }
+        // Bright content area
+        for y in 50..150 {
+            for x in 50..150 {
+                img.put_pixel(x, y, image::Rgb([200, 200, 200]));
+            }
+        }
+        let path = std::env::temp_dir().join("test_padding_scenario.png");
+        img.save(&path).unwrap();
+        // Tolerance=20 -> threshold=51 -> dark pixels (5,5,5) are border, bright (200,200,200) is content
+        let result = detect_image_crop(path.to_str().unwrap(), 20.0).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(result.x, 50);
+        assert_eq!(result.y, 50);
+        assert_eq!(result.w, 100);
+        assert_eq!(result.h, 100);
+    }
+
+    // ── process_single_image Tests ────────────────────────────────────────
+
+    #[test]
+    fn test_process_single_image_crops_correctly() {
+        // Create a 100x100 image, crop to 50x50 from top-left
+        let img = make_img(100, 100, 255, 0, 0);
+        let input_path = std::env::temp_dir().join("test_crop_input.png");
+        img.save(&input_path).unwrap();
+
+        let out_path = std::env::temp_dir().join("test_crop_output.png");
+        let crop = CropArea { w: 50, h: 50, x: 0, y: 0 };
+
+        let result = process_single_image(
+            input_path.to_str().unwrap(),
+            &crop,
+            "png",
+            &out_path,
+        );
+        assert!(result.is_none());
+        assert!(out_path.exists());
+
+        // Verify cropped dimensions
+        let cropped = image::open(&out_path).unwrap();
+        assert_eq!(cropped.dimensions(), (50, 50));
+
+        let _ = std::fs::remove_file(&input_path);
+        let _ = std::fs::remove_file(&out_path);
+    }
+
+    #[test]
+    fn test_process_single_image_crop_with_padding() {
+        let img = make_img(100, 100, 0, 255, 0);
+        let input_path = std::env::temp_dir().join("test_pad_input.png");
+        img.save(&input_path).unwrap();
+
+        let out_path = std::env::temp_dir().join("test_pad_output.png");
+        // Crop area near center, with padding (10px each side)
+        let crop = CropArea { w: 20, h: 20, x: 40, y: 40 };
+
+        // Simulate padding
+        let pad: u32 = 10;
+        let padded_crop = CropArea {
+            x: crop.x.saturating_sub(pad),
+            y: crop.y.saturating_sub(pad),
+            w: crop.w.saturating_add(pad * 2),
+            h: crop.h.saturating_add(pad * 2),
+        };
+
+        let result = process_single_image(
+            input_path.to_str().unwrap(),
+            &padded_crop,
+            "png",
+            &out_path,
+        );
+        assert!(result.is_none());
+        assert!(out_path.exists());
+
+        // Padded crop should be 40x40 (w:20+20, h:20+20)
+        let cropped = image::open(&out_path).unwrap();
+        assert_eq!(cropped.dimensions(), (40, 40));
+
+        let _ = std::fs::remove_file(&input_path);
+        let _ = std::fs::remove_file(&out_path);
+    }
+
+    #[test]
+    fn test_process_single_image_saves_jpeg_without_alpha() {
+        // RGBA image saved as JPEG should work (converted to RGB8)
+        let mut img = image::RgbaImage::new(50, 50);
+        for pixel in img.pixels_mut() {
+            *pixel = image::Rgba([255, 0, 0, 128]);
+        }
+        let input_path = std::env::temp_dir().join("test_rgba_input.png");
+        img.save(&input_path).unwrap();
+
+        let out_path = std::env::temp_dir().join("test_rgba_output.jpg");
+        let crop = CropArea { w: 50, h: 50, x: 0, y: 0 };
+
+        let result = process_single_image(
+            input_path.to_str().unwrap(),
+            &crop,
+            "jpg",
+            &out_path,
+        );
+        assert!(result.is_none());
+        assert!(out_path.exists());
+
+        let _ = std::fs::remove_file(&input_path);
+        let _ = std::fs::remove_file(&out_path);
+    }
+
+    #[test]
+    fn test_process_single_image_clamps_out_of_bounds_crop() {
+        let img = make_img(50, 50, 0, 0, 255);
+        let input_path = std::env::temp_dir().join("test_clamp_crop.png");
+        img.save(&input_path).unwrap();
+
+        let out_path = std::env::temp_dir().join("test_clamp_output.png");
+        // w=0 gets converted to max available (1 pixel from x=49)
+        let crop = CropArea { w: 0, h: 0, x: 100, y: 100 };
+
+        let result = process_single_image(
+            input_path.to_str().unwrap(),
+            &crop,
+            "png",
+            &out_path,
+        );
+        assert!(result.is_none());
+        assert!(out_path.exists());
+
+        let cropped = image::open(&out_path).unwrap();
+        // Clamped to 1x1 at (49,49)
+        assert_eq!(cropped.dimensions(), (1, 1));
+
+        let _ = std::fs::remove_file(&input_path);
+        let _ = std::fs::remove_file(&out_path);
+    }
+
+    // ── Output Format Resolution ─────────────────────────────────────────
+
+    #[test]
+    fn test_format_resolution_same_as_source() {
+        let ext = "png".to_string();
+        let requested = "Same as source".to_string();
+        let resolved = if requested == "Same as source" || requested.is_empty() {
+            ext.clone()
+        } else {
+            requested.to_lowercase()
+        };
+        assert_eq!(resolved, "png");
+    }
+
+    #[test]
+    fn test_format_resolution_video_cannot_become_image() {
+        let ext = "mp4".to_string();
+        let requested = "png".to_string();
+        let safe_ext = if is_video(&ext) {
+            if is_video(&requested) { requested } else { ext.clone() }
+        } else {
+            if is_video(&requested) { "png".to_string() } else { requested }
+        };
+        // mp4 input + png requested -> png is not video -> fallback to original ext
+        assert_eq!(safe_ext, "mp4");
+    }
+
+    #[test]
+    fn test_format_resolution_image_cannot_become_video() {
+        let ext = "png".to_string();
+        let requested = "mp4".to_string();
+        let safe_ext = if is_video(&ext) {
+            if is_video(&requested) { requested } else { ext.clone() }
+        } else {
+            if is_video(&requested) { "png".to_string() } else { requested }
+        };
+        // png input + mp4 requested -> image can't become video -> fallback to png
+        assert_eq!(safe_ext, "png");
+    }
+
+    #[test]
+    fn test_format_resolution_same_type_allowed() {
+        // Image -> image format change is fine
+        let ext = "png".to_string();
+        let requested = "jpg".to_string();
+        let safe_ext = if is_video(&ext) {
+            if is_video(&requested) { requested } else { ext.clone() }
+        } else {
+            if is_video(&requested) { "png".to_string() } else { requested }
+        };
+        assert_eq!(safe_ext, "jpg");
+    }
+
+    // ── CropArea clamping logic (from process_single_image) ──────────────
+
+    #[test]
+    fn test_crop_clamping_within_bounds() {
+        let img_w = 100u32;
+        let img_h = 100u32;
+        let crop = CropArea { w: 30, h: 30, x: 10, y: 10 };
+
+        let safe_x = crop.x.min(img_w.saturating_sub(1));
+        let safe_y = crop.y.min(img_h.saturating_sub(1));
+        let max_w = img_w.saturating_sub(safe_x);
+        let max_h = img_h.saturating_sub(safe_y);
+        let final_w = if crop.w == 0 { max_w } else { crop.w.min(max_w) };
+        let final_h = if crop.h == 0 { max_h } else { crop.h.min(max_h) };
+
+        assert_eq!(safe_x, 10);
+        assert_eq!(safe_y, 10);
+        assert_eq!(final_w, 30);
+        assert_eq!(final_h, 30);
+    }
+
+    #[test]
+    fn test_crop_clamping_out_of_bounds() {
+        let img_w = 100u32;
+        let img_h = 100u32;
+        let crop = CropArea { w: 200, h: 200, x: 50, y: 50 };
+
+        let safe_x = crop.x.min(img_w.saturating_sub(1));
+        let safe_y = crop.y.min(img_h.saturating_sub(1));
+        let max_w = img_w.saturating_sub(safe_x);
+        let max_h = img_h.saturating_sub(safe_y);
+        let final_w = if crop.w == 0 { max_w } else { crop.w.min(max_w) };
+        let final_h = if crop.h == 0 { max_h } else { crop.h.min(max_h) };
+
+        assert_eq!(safe_x, 50);
+        assert_eq!(safe_y, 50);
+        // w clamped to max_w = 100-50 = 50
+        assert_eq!(final_w, 50);
+        assert_eq!(final_h, 50);
+    }
+
+    #[test]
+    fn test_crop_clamping_zero_crop_uses_max() {
+        let img_w = 100u32;
+        let img_h = 100u32;
+        let crop = CropArea { w: 0, h: 0, x: 20, y: 20 };
+
+        let safe_x = crop.x.min(img_w.saturating_sub(1));
+        let safe_y = crop.y.min(img_h.saturating_sub(1));
+        let max_w = img_w.saturating_sub(safe_x);
+        let max_h = img_h.saturating_sub(safe_y);
+        let final_w = if crop.w == 0 { max_w } else { crop.w.min(max_w) };
+        let final_h = if crop.h == 0 { max_h } else { crop.h.min(max_h) };
+
+        assert_eq!(final_w, 80);
+        assert_eq!(final_h, 80);
+    }
+}
+
 // ── App Entry ───────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

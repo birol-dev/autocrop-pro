@@ -26,6 +26,10 @@ dist-ssr
 # Tauri
 src-tauri/target
 src-tauri/gen/schemas
+dist-tauri
+
+# TypeScript
+*.tsbuildinfo
 
 # Stray scratch/output files
 *.txt
@@ -35,8 +39,10 @@ src-tauri/gen/schemas
 Thumbs.db
 Desktop.ini
 
-# Environment files
+# Built release binary (copied to root for distribution)
+AutoCrop_Pro.exe
 
+# Environment files
 .env
 .env.*
 .env.local

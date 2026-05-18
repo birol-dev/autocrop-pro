@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { classifyFile, VIDEO_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,18 +49,6 @@ type OutputFile = {
     path: string;
     file_type: string;
 };
-
-// ── Constants ───────────────────────────────────────────────────────────────
-
-const VIDEO_EXTENSIONS = [".mp4", ".mov", ".avi", ".mkv", ".webm", ".flv", ".wmv"];
-const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".gif"];
-
-function classifyFile(path: string): "video" | "image" | null {
-    const lower = path.toLowerCase();
-    if (VIDEO_EXTENSIONS.some(ext => lower.endsWith(ext))) return "video";
-    if (IMAGE_EXTENSIONS.some(ext => lower.endsWith(ext))) return "image";
-    return null;
-}
 
 // ── Component ───────────────────────────────────────────────────────────────
 

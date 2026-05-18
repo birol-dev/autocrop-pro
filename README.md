@@ -101,11 +101,15 @@ The backend runs `ffmpeg -vf cropdetect` on 30 sample frames and parses the `cro
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/<your-org>/native-windows-app
 cd native-windows-app
 
 # Install frontend dependencies
 npm install
+
+# Run tests
+npm test                          # Frontend tests (Vitest)
+cd src-tauri && cargo test        # Backend tests (Rust)
 
 # Run in development mode (hot-reload frontend + Rust backend)
 npm run tauri dev
@@ -116,13 +120,15 @@ npm run tauri build
 
 ### Available Scripts
 
-| Command                  | Description                                      |
-|--------------------------|--------------------------------------------------|
-| `npm run tauri dev`      | Development mode with hot-reload                 |
-| `npm run tauri build`    | Production build (creates installers)            |
-| `npm run dev`            | Vite dev server only (frontend at localhost:1420)|
-| `npm run build`          | TypeScript check + Vite production build         |
-| `cd src-tauri && cargo build --release` | Build Rust backend only        |
+| Command                              | Description                                      |
+|--------------------------------------|--------------------------------------------------|
+| `npm run tauri dev`                  | Development mode with hot-reload                 |
+| `npm run tauri build`                | Production build (creates installers)            |
+| `npm run dev`                        | Vite dev server only (frontend at localhost:1420)|
+| `npm run build`                      | TypeScript check + Vite production build         |
+| `npm test`                           | Run frontend tests (Vitest)                      |
+| `cd src-tauri && cargo test`         | Run Rust backend tests                           |
+| `cd src-tauri && cargo build --release` | Build Rust backend only                       |
 
 ### Build Outputs
 
@@ -164,10 +170,14 @@ native-windows-app/
 |
 +-- src/                         # --- Frontend (React/TS) ---
 |   +-- main.tsx                 # React root mount
-|   +-- App.tsx                  # Main component (~776 lines)
+|   +-- App.tsx                  # Main component
 |   +-- index.css                # Tailwind CSS + global styles
 |   +-- lib/
 |   |   +-- utils.ts             # cn() utility
+|   |   +-- media.ts             # classifyFile() + extension constants
+|   |   +-- *.test.ts            # Vitest test files
+|   +-- test/
+|   |   +-- setup.ts             # Vitest setup (@testing-library/jest-dom)
 |   +-- components/
 |       +-- ui/                  # shadcn/ui primitives
 |           +-- button.tsx, card.tsx, checkbox.tsx
@@ -182,7 +192,7 @@ native-windows-app/
 |   +-- icons/                   # App icons
 |   +-- src/
 |       +-- main.rs              # Windows entry point
-|       +-- lib.rs               # All backend logic (~444 lines)
+|       +-- lib.rs               # All backend logic + #[cfg(test)] tests
 |
 +-- LICENSE                      # MIT License
 +-- README.md                    # This file
