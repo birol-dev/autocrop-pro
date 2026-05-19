@@ -27,6 +27,8 @@ dist-ssr
 src-tauri/target
 src-tauri/gen/schemas
 dist-tauri
+*.key
+*.pub
 
 # TypeScript
 *.tsbuildinfo

@@ -6,9 +6,6 @@
     "main"
   ],
   "permissions": [
-    "core:default",
-    "fs:default",
-    "fs:read-all",
-    "shell:allow-open"
+    "core:default"
   ]
 }
