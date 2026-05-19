@@ -1,4 +1,4 @@
-﻿# AutoCrop Pro
+# AutoCrop Pro
 
 A native desktop application for automatically detecting and cropping black borders from images and videos. Built with a **Rust** backend and a **React + TypeScript** frontend, packaged as a fast, lightweight native Windows app via **Tauri v2**.
 
@@ -101,8 +101,8 @@ The backend runs `ffmpeg -vf cropdetect` on 30 sample frames and parses the `cro
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-org>/native-windows-app
-cd native-windows-app
+git clone https://github.com/eact6/autocrop-pro
+cd autocrop-pro
 
 # Install frontend dependencies
 npm install
@@ -160,7 +160,7 @@ npm run tauri build
 ## Project Structure
 
 ```
-native-windows-app/
+autocrop-pro/
 +-- index.html                   # HTML shell
 +-- package.json                 # NPM dependencies and scripts
 +-- vite.config.ts               # Vite dev server config
