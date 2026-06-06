@@ -16,6 +16,14 @@ type SettingsSidebarProps = {
     onProcessAll: () => void;
 };
 
+const sectionStyle: React.CSSProperties = {
+    border: "var(--border-w) solid var(--border)",
+    borderRadius: "var(--radius-lg)",
+    background: "var(--surface)",
+    boxShadow: "var(--shadow)",
+    padding: "16px",
+};
+
 export default function SettingsSidebar({
     options,
     setOptions,
@@ -27,110 +35,278 @@ export default function SettingsSidebar({
     onProcessAll,
 }: SettingsSidebarProps) {
     return (
-        <aside className="w-80 border-l border-white/5 bg-zinc-950/80 backdrop-blur-2xl flex flex-col z-10 shrink-0 shadow-2xl relative">
-            <div className="p-6 overflow-y-auto scrollbar-hide flex-1">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2">
+        <aside
+            className="flex flex-col shrink-0 z-10"
+            style={{
+                width: "300px",
+                borderLeft: "var(--border-w) solid var(--border)",
+                background: "var(--bg)",
+            }}
+        >
+            {/* Scrollable settings area */}
+            <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+                <h2
+                    style={{
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 800,
+                        fontSize: "1.1rem",
+                        color: "var(--text)",
+                        margin: 0,
+                    }}
+                >
                     Export Settings
-                    <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent" />
                 </h2>
 
-                <div className="space-y-8">
-                    {/* Tolerance Slider */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-                            <Label className="text-sm font-medium text-zinc-300">Detection Tolerance</Label>
-                            <div className="px-2 py-1 rounded-md bg-zinc-800 text-xs font-mono text-indigo-300">
-                                {options.tolerance}%
-                            </div>
+                {/* Detection Tolerance */}
+                <div style={sectionStyle}>
+                    <div className="flex items-center justify-between mb-4">
+                        <Label
+                            style={{
+                                fontFamily: "'Space Grotesk', sans-serif",
+                                fontWeight: 600,
+                                fontSize: "0.85rem",
+                                color: "var(--text)",
+                            }}
+                        >
+                            Detection Tolerance
+                        </Label>
+                        <div
+                            style={{
+                                background: "var(--purple)",
+                                border: "var(--border-w) solid var(--border)",
+                                borderRadius: "8px",
+                                padding: "2px 10px",
+                                fontFamily: "'Nunito', sans-serif",
+                                fontWeight: 800,
+                                fontSize: "0.85rem",
+                                color: "#fff",
+                                boxShadow: "2px 2px 0px var(--border)",
+                            }}
+                        >
+                            {options.tolerance}%
                         </div>
-                        <div className="px-1">
-                            <Slider
-                                value={[options.tolerance]}
-                                onValueChange={(val) => setOptions(o => ({ ...o, tolerance: val[0] }))}
-                                max={100}
-                                step={1}
-                                className="[&_[role=slider]]:bg-indigo-500 [&_[role=slider]]:border-4 [&_[role=slider]]:border-zinc-950 [&_[role=slider]]:shadow-xl [&>span]:bg-zinc-800 [&_[data-orientation=horizontal]>span]:bg-indigo-500"
-                            />
+                    </div>
+                    <Slider
+                        value={[options.tolerance]}
+                        onValueChange={(val) => setOptions(o => ({ ...o, tolerance: val[0] }))}
+                        max={100}
+                        step={1}
+                        className="[&_[role=slider]]:border-[3px] [&_[role=slider]]:border-[var(--border)] [&_[role=slider]]:shadow-[2px_2px_0px_var(--border)] [&_[role=slider]]:w-5 [&_[role=slider]]:h-5 [&_[role=slider]]:bg-[var(--teal)] [&>span]:bg-[var(--border)] [&>span]:h-[3px] [&_[data-orientation=horizontal]>span]:bg-[var(--teal)]"
+                    />
+                </div>
+
+                {/* Output Format */}
+                <div style={sectionStyle}>
+                    <Label
+                        className="block mb-3"
+                        style={{
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontWeight: 600,
+                            fontSize: "0.85rem",
+                            color: "var(--text)",
+                        }}
+                    >
+                        Output Format
+                    </Label>
+                    <Select value={options.output_format} onValueChange={(val) => setOptions(o => ({ ...o, output_format: val }))}>
+                        <SelectTrigger
+                            className="h-11 text-sm font-semibold focus:ring-0 focus:ring-offset-0"
+                            style={{
+                                border: "var(--border-w) solid var(--border)",
+                                borderRadius: "12px",
+                                background: "var(--bg-card)",
+                                boxShadow: "var(--shadow)",
+                                color: "var(--text)",
+                                fontFamily: "'Space Grotesk', sans-serif",
+                            }}
+                        >
+                            <SelectValue placeholder="Format" />
+                        </SelectTrigger>
+                        <SelectContent
+                            style={{
+                                border: "var(--border-w) solid var(--border)",
+                                borderRadius: "14px",
+                                background: "var(--surface)",
+                                boxShadow: "var(--shadow-lg)",
+                                color: "var(--text)",
+                            }}
+                        >
+                            {["Same as source", "png", "jpg", "webp"].map(fmt => (
+                                <SelectItem
+                                    key={fmt}
+                                    value={fmt}
+                                    className="rounded-lg cursor-pointer font-medium"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    {fmt === "Same as source" ? "Same as source" : fmt === "png" ? "PNG (Lossless)" : fmt === "jpg" ? "JPEG (Compressed)" : "WebP"}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Toggles */}
+                <div style={sectionStyle} className="flex flex-col gap-4">
+                    {/* Padding toggle */}
+                    <label className="flex items-center justify-between cursor-pointer group">
+                        <div>
+                            <p
+                                style={{
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    fontWeight: 600,
+                                    fontSize: "0.85rem",
+                                    color: "var(--text)",
+                                    margin: 0,
+                                }}
+                            >
+                                Padding
+                            </p>
+                            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
+                                Adds 10px buffer around crop edge
+                            </p>
                         </div>
-                    </div>
+                        <Switch
+                            checked={options.padding}
+                            onCheckedChange={(c) => setOptions(o => ({ ...o, padding: c }))}
+                            className="data-[state=checked]:bg-[var(--teal)] data-[state=unchecked]:bg-[var(--bg-card)] border-[3px] border-[var(--border)]"
+                        />
+                    </label>
 
-                    {/* Format Select */}
-                    <div className="space-y-3">
-                        <Label className="text-sm font-medium text-zinc-300 pl-1">Output Format</Label>
-                        <Select value={options.output_format} onValueChange={(val) => setOptions(o => ({ ...o, output_format: val }))}>
-                            <SelectTrigger className="bg-zinc-900/50 border-white/5 text-zinc-300 h-12 rounded-xl focus:ring-1 focus:ring-indigo-500/50 transition-all">
-                                <SelectValue placeholder="Format" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-300 rounded-xl shadow-2xl">
-                                <SelectItem value="Same as source" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">Same as source</SelectItem>
-                                <SelectItem value="png" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">PNG (Lossless)</SelectItem>
-                                <SelectItem value="jpg" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">JPEG (Compressed)</SelectItem>
-                                <SelectItem value="webp" className="focus:bg-indigo-500/10 focus:text-indigo-300 rounded-lg cursor-pointer">WebP</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <div style={{ height: "var(--border-w)", background: "var(--border)", borderRadius: "99px" }} />
 
-                    {/* Toggles */}
-                    <div className="space-y-2 bg-zinc-900/30 rounded-2xl border border-white/5 p-2">
-                        <label className="flex items-center justify-between p-3 rounded-xl hover:bg-zinc-800/50 transition-colors cursor-pointer group">
-                            <div className="space-y-0.5">
-                                <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">Padding</span>
-                                <p className="text-[10px] text-zinc-500">Adds 10px buffer around crop edge</p>
-                            </div>
-                            <Switch
-                                checked={options.padding}
-                                onCheckedChange={(c) => setOptions(o => ({ ...o, padding: c }))}
-                                className="data-[state=checked]:bg-indigo-500"
-                            />
-                        </label>
-
-                        <label className="flex items-center justify-between p-3 rounded-xl hover:bg-red-500/5 transition-colors cursor-pointer group">
-                            <div className="space-y-0.5">
-                                <span className="text-sm font-medium text-zinc-300 group-hover:text-red-400 transition-colors">Delete Originals</span>
-                                <p className="text-[10px] text-red-500/70">Removes source files after processing</p>
-                            </div>
-                            <Switch
-                                checked={options.delete_original}
-                                onCheckedChange={(c) => setOptions(o => ({ ...o, delete_original: c }))}
-                                className="data-[state=checked]:bg-red-500"
-                            />
-                        </label>
-                    </div>
+                    {/* Delete originals toggle */}
+                    <label className="flex items-center justify-between cursor-pointer group">
+                        <div>
+                            <p
+                                style={{
+                                    fontFamily: "'Nunito', sans-serif",
+                                    fontWeight: 800,
+                                    fontSize: "0.85rem",
+                                    color: "var(--pink)",
+                                    margin: 0,
+                                    textDecoration: options.delete_original ? "underline" : "none",
+                                    textDecorationColor: "var(--pink)",
+                                }}
+                            >
+                                Delete Originals
+                            </p>
+                            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
+                                Removes source files after processing
+                            </p>
+                        </div>
+                        <Switch
+                            checked={options.delete_original}
+                            onCheckedChange={(c) => setOptions(o => ({ ...o, delete_original: c }))}
+                            className="data-[state=checked]:bg-[var(--pink)] data-[state=unchecked]:bg-[var(--bg-card)] border-[3px] border-[var(--border)]"
+                        />
+                    </label>
                 </div>
             </div>
 
-            {/* Process Button */}
-            <div className="p-6 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent sticky bottom-0">
+            {/* Process Button area */}
+            <div
+                className="p-5 shrink-0"
+                style={{ borderTop: "var(--border-w) solid var(--border)" }}
+            >
                 <button
                     disabled={!hasFiles || isProcessing}
                     onClick={onProcessAll}
-                    className="group relative w-full h-14 flex items-center justify-center gap-2 bg-zinc-100 hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 text-zinc-900 font-semibold rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_0_40px_-10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_-5px_rgba(99,102,241,0.3)] disabled:shadow-none"
+                    className="relative w-full flex items-center justify-center gap-2 font-display transition-all duration-200 overflow-hidden"
+                    style={{
+                        height: "52px",
+                        border: "var(--border-w) solid var(--border)",
+                        borderRadius: "16px",
+                        background: !hasFiles || isProcessing ? "var(--bg-card)" : "var(--text)",
+                        color: !hasFiles || isProcessing ? "var(--text-muted)" : "var(--bg)",
+                        boxShadow: !hasFiles || isProcessing ? "none" : "var(--shadow-lg)",
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 800,
+                        fontSize: "1rem",
+                        cursor: !hasFiles || isProcessing ? "not-allowed" : "pointer",
+                        transform: "translateY(0)",
+                        transition: "transform 0.15s, box-shadow 0.15s",
+                    }}
+                    onMouseDown={e => {
+                        if (hasFiles && !isProcessing) {
+                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)";
+                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "2px 2px 0px var(--border)";
+                        }
+                    }}
+                    onMouseUp={e => {
+                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow = hasFiles && !isProcessing ? "var(--shadow-lg)" : "none";
+                    }}
+                    onMouseLeave={e => {
+                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow = hasFiles && !isProcessing ? "var(--shadow-lg)" : "none";
+                    }}
                 >
+                    {/* Progress bar fill */}
                     {isProcessing && (
-                        <div className="absolute inset-0 bg-indigo-500/10">
-                            <div className="h-full bg-indigo-500/20 absolute left-0 top-0 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
-                        </div>
+                        <div
+                            className="absolute left-0 top-0 h-full transition-all duration-300"
+                            style={{
+                                width: `${progress}%`,
+                                background: "var(--teal)",
+                                opacity: 0.25,
+                                borderRadius: "inherit",
+                            }}
+                        />
                     )}
 
                     <div className="relative flex items-center gap-2">
                         {isProcessing ? (
                             <>
-                                <div className="w-4 h-4 rounded-full border-2 border-zinc-900/30 border-t-zinc-900 animate-spin" />
+                                <div
+                                    className="animate-spin"
+                                    style={{
+                                        width: "16px",
+                                        height: "16px",
+                                        borderRadius: "50%",
+                                        border: "3px solid var(--text-muted)",
+                                        borderTopColor: "var(--bg)",
+                                    }}
+                                />
                                 <span>{progressMsg || "Processing..."} {Math.round(progress)}%</span>
                             </>
                         ) : (
                             <>
                                 <span>Process Files</span>
                                 {hasFiles && (
-                                    <span className="bg-zinc-900/10 px-2 py-0.5 rounded-lg text-xs ml-1 font-bold">{filesCount}</span>
+                                    <span
+                                        style={{
+                                            background: "var(--pink)",
+                                            color: "#fff",
+                                            borderRadius: "8px",
+                                            padding: "0 8px",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 800,
+                                            border: "2px solid var(--border)",
+                                        }}
+                                    >
+                                        {filesCount}
+                                    </span>
                                 )}
-                                <ChevronRight size={18} className="text-zinc-400 group-hover:text-zinc-900 transition-colors group-hover:translate-x-1 duration-300" />
+                                <ChevronRight size={18} />
                             </>
                         )}
                     </div>
                 </button>
+
                 {!hasFiles && !isProcessing && (
-                    <p className="text-center text-[10px] text-zinc-600 mt-4 uppercase tracking-widest font-medium">Drop files to begin</p>
+                    <p
+                        className="text-center mt-3"
+                        style={{
+                            fontFamily: "'Nunito', sans-serif",
+                            fontWeight: 800,
+                            fontSize: "0.7rem",
+                            color: "var(--pink)",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                        }}
+                    >
+                        Drop files to begin
+                    </p>
                 )}
             </div>
         </aside>

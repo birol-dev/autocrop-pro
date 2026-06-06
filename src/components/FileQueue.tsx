@@ -7,85 +7,178 @@ type FileQueueProps = {
     onRemoveFile: (id: string) => void;
 };
 
-export default function FileQueue({
-    files,
-    onPreviewFile,
-    onRemoveFile,
-}: FileQueueProps) {
+export default function FileQueue({ files, onPreviewFile, onRemoveFile }: FileQueueProps) {
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-            <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-medium text-zinc-400">
-                    Queue <span className="text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-full ml-2 text-xs">{files.length}</span>
+        <div className="flex flex-col gap-4 pb-16">
+            {/* Queue header */}
+            <div className="flex items-center gap-3">
+                <h2
+                    style={{
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 800,
+                        fontSize: "1rem",
+                        color: "var(--text)",
+                        margin: 0,
+                    }}
+                >
+                    Queue
                 </h2>
+                <span
+                    style={{
+                        background: "var(--teal)",
+                        border: "2px solid var(--border)",
+                        borderRadius: "8px",
+                        padding: "1px 10px",
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 800,
+                        fontSize: "0.78rem",
+                        color: "#fff",
+                        boxShadow: "2px 2px 0px var(--border)",
+                    }}
+                >
+                    {files.length}
+                </span>
             </div>
 
+            {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {files.map((f, index) => (
                     <div
                         key={f.id}
                         onClick={() => onPreviewFile(f)}
-                        className="group relative bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:bg-zinc-800/50 transition-all duration-300 hover:shadow-xl hover:shadow-black/50 hover:-translate-y-1"
-                        style={{ animationDelay: `${index * 50}ms` }}
+                        className="group relative cursor-pointer overflow-hidden transition-all duration-200"
+                        style={{
+                            border: "var(--border-w) solid var(--border)",
+                            borderRadius: "var(--radius-lg)",
+                            background: "var(--surface)",
+                            boxShadow: "var(--shadow)",
+                            animationDelay: `${index * 50}ms`,
+                        }}
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLDivElement).style.transform = "translate(-2px, -2px)";
+                            (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lg)";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLDivElement).style.transform = "translate(0, 0)";
+                            (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
+                        }}
                     >
                         {/* Thumbnail */}
-                        <div className="w-full h-32 bg-zinc-950 relative overflow-hidden flex items-center justify-center border-b border-white/5">
+                        <div
+                            className="w-full relative overflow-hidden flex items-center justify-center"
+                            style={{
+                                height: "120px",
+                                borderBottom: "var(--border-w) solid var(--border)",
+                                background: "var(--bg-card)",
+                            }}
+                        >
                             {f.previewUrl ? (
-                                f.type === 'video' ? (
+                                f.type === "video" ? (
                                     <>
                                         <video
                                             src={`${f.previewUrl}#t=0.1`}
-                                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             preload="metadata"
-                                            onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+                                            onError={e => { (e.target as HTMLVideoElement).style.display = "none"; }}
                                         />
-                                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                                                <Play size={14} className="text-white translate-x-0.5" fill="currentColor" />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,0.3)" }}>
+                                            <div
+                                                className="flex items-center justify-center"
+                                                style={{
+                                                    width: "36px", height: "36px",
+                                                    borderRadius: "50%",
+                                                    background: "#fff",
+                                                    border: "2px solid var(--border)",
+                                                }}
+                                            >
+                                                <Play size={14} className="translate-x-0.5" fill="var(--text)" color="var(--text)" />
                                             </div>
                                         </div>
                                     </>
                                 ) : (
                                     <img
                                         src={f.previewUrl}
-                                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         alt={f.name}
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                                     />
                                 )
                             ) : (
-                                <div className="text-zinc-700">
-                                    {f.type === 'video' ? <Video size={32} strokeWidth={1} /> : <ImageIcon size={32} strokeWidth={1} />}
+                                <div style={{ color: "var(--text-muted)" }}>
+                                    {f.type === "video" ? <Video size={32} strokeWidth={1.5} /> : <ImageIcon size={32} strokeWidth={1.5} />}
                                 </div>
                             )}
 
                             {/* Remove button */}
-                            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onRemoveFile(f.id); }}
-                                    className="w-8 h-8 rounded-full bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md text-red-200 flex items-center justify-center transition-colors"
+                                    onClick={e => { e.stopPropagation(); onRemoveFile(f.id); }}
+                                    className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                                    style={{
+                                        width: "28px", height: "28px",
+                                        borderRadius: "8px",
+                                        border: "2px solid var(--border)",
+                                        background: "var(--pink)",
+                                        color: "#fff",
+                                        boxShadow: "2px 2px 0px var(--border)",
+                                        cursor: "pointer",
+                                    }}
                                     title="Remove from queue"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={13} />
                                 </button>
                             </div>
 
                             {/* Crop badge */}
                             {f.crop && (
-                                <div className="absolute bottom-2 left-2 bg-zinc-900/80 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-lg">
-                                    <CheckCircle2 size={12} /> Crop Ready
+                                <div
+                                    className="absolute bottom-2 left-2 flex items-center gap-1"
+                                    style={{
+                                        background: "var(--teal)",
+                                        border: "2px solid var(--border)",
+                                        borderRadius: "8px",
+                                        padding: "2px 8px",
+                                        fontSize: "0.65rem",
+                                        fontFamily: "'Nunito', sans-serif",
+                                        fontWeight: 800,
+                                        color: "#fff",
+                                        boxShadow: "2px 2px 0px var(--border)",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.05em",
+                                    }}
+                                >
+                                    <CheckCircle2 size={11} />
+                                    Crop Ready
                                 </div>
                             )}
                         </div>
 
                         {/* File info */}
-                        <div className="p-4">
-                            <p className="text-sm font-medium text-zinc-300 truncate group-hover:text-indigo-300 transition-colors" title={f.name}>
+                        <div className="p-3">
+                            <p
+                                className="truncate"
+                                style={{
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    fontWeight: 600,
+                                    fontSize: "0.82rem",
+                                    color: "var(--text)",
+                                    margin: 0,
+                                }}
+                                title={f.name}
+                            >
                                 {f.name}
                             </p>
-                            <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500">
-                                <span className="capitalize">{f.type}</span>
-                            </div>
+                            <p
+                                style={{
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    fontSize: "0.72rem",
+                                    color: "var(--text-muted)",
+                                    margin: "3px 0 0 0",
+                                    textTransform: "capitalize",
+                                }}
+                            >
+                                {f.type}
+                            </p>
                         </div>
                     </div>
                 ))}

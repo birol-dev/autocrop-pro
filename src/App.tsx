@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
-import { Settings, UploadCloud } from "lucide-react";
+import { UploadCloud, Sun, Moon } from "lucide-react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
@@ -54,6 +54,13 @@ export type OutputFile = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function App() {
+    const [dark, setDark] = useState(false);
+
+    // Sync dark class
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", dark);
+    }, [dark]);
+
     // Application state
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -175,14 +182,11 @@ export default function App() {
     // ── Tolerance Change (Debounced) ────────────────────────────────────────
 
     useEffect(() => {
-        // Cancel any pending redetection
         if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current);
 
         toleranceTimerRef.current = setTimeout(() => {
-            // Invalidate all cached crops
             setFiles(prev => prev.map(f => ({ ...f, crop: undefined })));
 
-            // Re-detect for the currently previewed file
             if (previewFile) {
                 setDetectingCrop(true);
                 invoke<CropArea>("detect_crop_areas", { filePath: previewFile.path, tolerance: options.tolerance })
@@ -239,7 +243,6 @@ export default function App() {
         setProgress(0);
         setProgressMsg("Detecting crop regions...");
 
-        // Ensure every file has crop data
         const itemsToProcess = [];
         for (const file of files) {
             let crop = file.crop;
@@ -269,7 +272,6 @@ export default function App() {
             await invoke("process_files", { items: itemsToProcess, options });
 
             setFiles([]);
-            // Auto-open gallery after successful processing
             await openGallery();
         } catch (error) {
             toast.error(`Processing failed: ${String(error)}`);
@@ -308,44 +310,132 @@ export default function App() {
     const hasFiles = files.length > 0;
 
     return (
-        <div className="flex h-screen w-full bg-[#09090b] text-zinc-100 overflow-hidden font-sans selection:bg-indigo-500/30">
-            <Toaster theme="dark" position="bottom-right" className="font-sans" toastOptions={{
-                className: "bg-zinc-900/90 backdrop-blur-xl border-zinc-800 text-zinc-100 shadow-2xl"
-            }} />
+        <div
+            className="flex h-screen w-full overflow-hidden"
+            style={{ background: "var(--bg)", color: "var(--text)", fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+            <Toaster
+                theme={dark ? "dark" : "light"}
+                position="bottom-right"
+                toastOptions={{
+                    style: {
+                        background: "var(--surface)",
+                        border: "var(--border-w) solid var(--border)",
+                        color: "var(--text)",
+                        borderRadius: "16px",
+                        boxShadow: "var(--shadow)",
+                        fontFamily: "'Space Grotesk', sans-serif",
+                    }
+                }}
+            />
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col relative h-full">
-                <header data-tauri-drag-region className="h-[68px] flex items-center justify-between px-8 border-b border-white/5 bg-zinc-950/50 backdrop-blur-md z-20 shrink-0 select-none">
+            <main className="flex-1 flex flex-col relative h-full overflow-hidden">
+                {/* Header */}
+                <header
+                    data-tauri-drag-region
+                    className="h-[64px] flex items-center justify-between px-6 shrink-0 select-none"
+                    style={{
+                        borderBottom: `var(--border-w) solid var(--border)`,
+                        background: "var(--bg)",
+                    }}
+                >
                     <div className="flex items-center gap-3 pointer-events-none">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <Settings size={16} className="text-white" />
+                        {/* Logo mark */}
+                        <div
+                            className="w-9 h-9 flex items-center justify-center font-display font-900 text-sm"
+                            style={{
+                                background: "var(--pink)",
+                                border: "var(--border-w) solid var(--border)",
+                                borderRadius: "10px",
+                                boxShadow: "var(--shadow)",
+                                color: "#fff",
+                                fontFamily: "'Nunito', sans-serif",
+                                fontWeight: 900,
+                            }}
+                        >
+                            AC
                         </div>
-                        <h1 className="text-sm font-semibold tracking-wide text-zinc-100">AutoCrop Pro</h1>
+                        <h1
+                            style={{
+                                fontFamily: "'Nunito', sans-serif",
+                                fontWeight: 800,
+                                fontSize: "1.1rem",
+                                letterSpacing: "-0.01em",
+                            }}
+                        >
+                            AutoCrop Pro
+                        </h1>
                     </div>
+
+                    {/* Theme toggle */}
+                    <button
+                        onClick={() => setDark(d => !d)}
+                        className="pointer-events-auto flex items-center justify-center w-9 h-9 transition-transform hover:scale-105 active:scale-95"
+                        style={{
+                            border: "var(--border-w) solid var(--border)",
+                            borderRadius: "10px",
+                            background: "var(--surface)",
+                            boxShadow: "var(--shadow)",
+                            color: "var(--text)",
+                            cursor: "pointer",
+                        }}
+                        title="Toggle theme"
+                    >
+                        {dark ? <Sun size={16} /> : <Moon size={16} />}
+                    </button>
                 </header>
 
-                <div className="flex-1 p-8 overflow-y-auto space-y-8 scrollbar-hide">
+                {/* Dropzone + Queue */}
+                <div className="flex-1 p-6 overflow-y-auto" style={{ gap: "1.5rem", display: "flex", flexDirection: "column" }}>
                     {/* Dropzone */}
                     <div
                         {...getRootProps()}
-                        className={`group relative w-full rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden border-2
-                            ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
-                            ${hasFiles ? 'h-32 bg-zinc-900/20 border-zinc-800/50 hover:border-indigo-500/30' : 'h-64 bg-zinc-900/40 border-dashed border-zinc-700/50 hover:border-indigo-500/50 hover:bg-zinc-900/60'}
-                            ${isDragHovering ? 'border-indigo-500 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20 z-10' : ''}
-                        `}
+                        className={`relative w-full flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
+                        style={{
+                            minHeight: hasFiles ? "96px" : "220px",
+                            border: `var(--border-w) ${isDragHovering ? "solid" : "dashed"} var(--${isDragHovering ? "pink" : "border"})`,
+                            borderRadius: "var(--radius-xl)",
+                            background: isDragHovering
+                                ? "color-mix(in srgb, var(--pink) 8%, var(--bg))"
+                                : "var(--bg-card)",
+                            boxShadow: isDragHovering ? "var(--shadow-lg)" : "none",
+                            transform: isDragHovering ? "scale(1.01)" : "scale(1)",
+                        }}
                     >
                         <input {...getInputProps()} />
-                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative z-10 flex flex-col items-center gap-3">
-                            <div className={`p-4 rounded-2xl bg-zinc-800/50 text-indigo-400 group-hover:scale-110 group-hover:text-indigo-300 transition-all duration-300 shadow-xl ${hasFiles ? 'scale-75 mb-0 p-3' : ''}`}>
-                                <UploadCloud size={hasFiles ? 24 : 32} strokeWidth={1.5} />
+                        <div className="flex flex-col items-center gap-3">
+                            <div
+                                className="flex items-center justify-center transition-transform duration-300"
+                                style={{
+                                    width: hasFiles ? "44px" : "60px",
+                                    height: hasFiles ? "44px" : "60px",
+                                    borderRadius: "14px",
+                                    border: "var(--border-w) solid var(--border)",
+                                    background: isDragHovering ? "var(--pink)" : "var(--surface)",
+                                    boxShadow: "var(--shadow)",
+                                    color: isDragHovering ? "#fff" : "var(--pink)",
+                                    transition: "all 0.3s",
+                                }}
+                            >
+                                <UploadCloud size={hasFiles ? 20 : 28} strokeWidth={2} />
                             </div>
                             <div className="text-center">
-                                <p className={`font-medium text-zinc-200 transition-all duration-300 ${hasFiles ? 'text-sm' : 'text-lg'}`}>
+                                <p
+                                    className="font-semibold"
+                                    style={{
+                                        fontFamily: "'Nunito', sans-serif",
+                                        fontWeight: 700,
+                                        fontSize: hasFiles ? "0.9rem" : "1.1rem",
+                                        color: isDragHovering ? "var(--pink)" : "var(--text)",
+                                    }}
+                                >
                                     {isDragHovering ? "Release to add files" : "Drag & drop media files here"}
                                 </p>
                                 {!hasFiles && (
-                                    <p className="text-xs text-zinc-500 mt-2 font-medium">Or click to browse your files</p>
+                                    <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                                        Or click to browse your files
+                                    </p>
                                 )}
                             </div>
                         </div>

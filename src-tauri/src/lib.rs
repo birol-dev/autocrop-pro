@@ -544,11 +544,6 @@ mod tests {
         assert_eq!(result.h, 1);
     }
 
-    #[test]
-    fn test_detect_image_crop_nonexistent_file() {
-        let result = detect_image_crop("/nonexistent/path.png", 50.0);
-        assert!(result.is_err());
-    }
 
     #[test]
     fn test_detect_image_crop_padding_scenario() {

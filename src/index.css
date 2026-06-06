@@ -2,45 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+/* ── Design Tokens ──────────────────────────────────────────────── */
+:root {
+  /* Light / cream theme */
+  --bg:        #f5f0e8;
+  --bg-card:   #ede8df;
+  --surface:   #ffffff;
+  --border:    #1a1a1a;
+  --text:      #1a1a1a;
+  --text-muted:#5a5a5a;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  --pink:      #e8006e;
+  --teal:      #00b8a9;
+  --yellow:    #ffd231;
+  --purple:    #7c3aed;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-
-    --radius: 0.5rem;
-  }
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --border-w:  3px;
+  --shadow:    4px 4px 0px #1a1a1a;
+  --shadow-lg: 6px 6px 0px #1a1a1a;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+.dark {
+  --bg:        #000000;
+  --bg-card:   #0d0d0d;
+  --surface:   #161616;
+  --border:    #444444;
+  --text:      #f0f0f0;
+  --text-muted:#888888;
+
+  --pink:      #ff2d8a;
+  --teal:      #00d4c3;
+  --yellow:    #ffe046;
+  --purple:    #a855f7;
+
+  --shadow:    4px 4px 0px #444444;
+  --shadow-lg: 6px 6px 0px #444444;
 }
+
+/* ── Base ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Nunito', sans-serif;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
