@@ -1,18 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useDropzone } from "react-dropzone";
-import { UploadCloud, Sun, Moon } from "lucide-react";
+import { UploadCloud, Sun, Moon, Layers, FolderOpen, Settings } from "lucide-react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { Toaster, toast } from "sonner";
-import { classifyFile, VIDEO_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
+import { classifyFile } from "@/lib/media";
 
 // Import modular components
 import SettingsSidebar from "@/components/SettingsSidebar";
 import PreviewModal from "@/components/PreviewModal";
-import GalleryModal from "@/components/GalleryModal";
 import FileQueue from "@/components/FileQueue";
+import OutputsPanel from "@/components/OutputsPanel";
+import SettingsPanel from "@/components/SettingsPanel";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -49,12 +50,17 @@ export type OutputFile = {
     name: string;
     path: string;
     file_type: string;
+    modified_at: number;
 };
+
+type Tab = "queue" | "outputs" | "settings";
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function App() {
     const [dark, setDark] = useState(false);
+    const [tab, setTab] = useState<Tab>("queue");
+    const [outputsRefreshTick, setOutputsRefreshTick] = useState(0);
 
     // Sync dark class
     useEffect(() => {
@@ -81,14 +87,6 @@ export default function App() {
     });
 
     const [isDragHovering, setIsDragHovering] = useState(false);
-
-    // Gallery state
-    const [showGallery, setShowGallery] = useState(false);
-    const [galleryFiles, setGalleryFiles] = useState<OutputFile[]>([]);
-    const [galleryLoading, setGalleryLoading] = useState(false);
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-    // Debounce ref for tolerance changes
     const toleranceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ── File Management ─────────────────────────────────────────────────────
@@ -98,24 +96,14 @@ export default function App() {
         for (const path of paths) {
             const fileType = classifyFile(path);
             if (!fileType) continue;
-
             const name = path.split('\\').pop()?.split('/').pop() || path;
             const previewUrl = convertFileSrc(path);
-
-            newFiles.push({
-                id: crypto.randomUUID(),
-                path,
-                name,
-                type: fileType,
-                previewUrl,
-            });
+            newFiles.push({ id: crypto.randomUUID(), path, name, type: fileType, previewUrl });
         }
-
         if (newFiles.length > 0) {
             setFiles(prev => {
                 const existingPaths = new Set(prev.map(f => f.path));
-                const unique = newFiles.filter(f => !existingPaths.has(f.path));
-                return [...prev, ...unique];
+                return [...prev, ...newFiles.filter(f => !existingPaths.has(f.path))];
             });
         }
     }, []);
@@ -129,64 +117,54 @@ export default function App() {
 
     useEffect(() => {
         let unlisten: (() => void) | undefined;
-
         (async () => {
             try {
                 unlisten = await getCurrentWebview().onDragDropEvent((event) => {
                     if (isProcessing) return;
-
                     switch (event.payload.type) {
-                        case 'over':
-                        case 'enter':
-                            setIsDragHovering(true);
-                            break;
-                        case 'leave':
-                            setIsDragHovering(false);
-                            break;
+                        case 'over': case 'enter': setIsDragHovering(true); break;
+                        case 'leave': setIsDragHovering(false); break;
                         case 'drop':
                             setIsDragHovering(false);
-                            if (Array.isArray(event.payload.paths)) {
-                                addFilesFromPaths(event.payload.paths);
-                            }
+                            if (Array.isArray(event.payload.paths)) addFilesFromPaths(event.payload.paths);
                             break;
                     }
                 });
-            } catch (err) {
-                console.error("Drag-drop listener failed:", err);
-            }
+            } catch (err) { console.error("Drag-drop listener failed:", err); }
         })();
-
         return () => { unlisten?.(); };
     }, [isProcessing, addFilesFromPaths]);
 
-    // ── HTML Fallback Dropzone ──────────────────────────────────────────────
+    // ── HTML Click-to-Browse (via Tauri native dialog) ─────────────────────
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
+    const handleDropzoneClick = useCallback(async () => {
         if (isProcessing) return;
-        const paths = acceptedFiles
-            .map(f => (f as File & { path?: string }).path)
-            .filter((p): p is string => Boolean(p));
-        if (paths.length > 0) addFilesFromPaths(paths);
+        try {
+            const selected = await openDialog({
+                multiple: true,
+                filters: [{
+                    name: 'Media Files',
+                    extensions: [
+                        'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv',
+                        'jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'gif'
+                    ]
+                }]
+            });
+            if (selected) {
+                const paths = Array.isArray(selected) ? selected : [selected];
+                addFilesFromPaths(paths);
+            }
+        } catch (err) {
+            toast.error(`Failed to open file picker: ${String(err)}`);
+        }
     }, [isProcessing, addFilesFromPaths]);
-
-    const { getRootProps, getInputProps } = useDropzone({
-        onDrop,
-        disabled: isProcessing,
-        noDrag: true,
-        accept: {
-            'video/*': VIDEO_EXTENSIONS,
-            'image/*': IMAGE_EXTENSIONS,
-        },
-    });
 
     // ── Tolerance Change (Debounced) ────────────────────────────────────────
 
     useEffect(() => {
         if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current);
-
         toleranceTimerRef.current = setTimeout(() => {
             setFiles(prev => prev.map(f => ({ ...f, crop: undefined })));
-
             if (previewFile) {
                 setDetectingCrop(true);
                 invoke<CropArea>("detect_crop_areas", { filePath: previewFile.path, tolerance: options.tolerance })
@@ -198,10 +176,7 @@ export default function App() {
                     .finally(() => setDetectingCrop(false));
             }
         }, 300);
-
-        return () => {
-            if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current);
-        };
+        return () => { if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [options.tolerance]);
 
@@ -211,34 +186,24 @@ export default function App() {
         if (isProcessing) return;
         setPreviewFile(file);
         setDetectedCrop(file.crop || null);
-
         if (!file.crop && file.path) {
             setDetectingCrop(true);
             try {
-                const crop = await invoke<CropArea>("detect_crop_areas", {
-                    filePath: file.path,
-                    tolerance: options.tolerance,
-                });
+                const crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
                 setDetectedCrop(crop);
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
             } catch (error) {
                 toast.error(`Detection failed: ${String(error)}`);
-            } finally {
-                setDetectingCrop(false);
-            }
+            } finally { setDetectingCrop(false); }
         }
     };
 
-    const closePreview = useCallback(() => {
-        setPreviewFile(null);
-        setDetectedCrop(null);
-    }, []);
+    const closePreview = useCallback(() => { setPreviewFile(null); setDetectedCrop(null); }, []);
 
     // ── Process All ─────────────────────────────────────────────────────────
 
     const handleProcessAll = async () => {
         if (files.length === 0) return;
-
         setIsProcessing(true);
         setProgress(0);
         setProgressMsg("Detecting crop regions...");
@@ -248,19 +213,13 @@ export default function App() {
             let crop = file.crop;
             if (!crop) {
                 try {
-                    crop = await invoke<CropArea>("detect_crop_areas", {
-                        filePath: file.path,
-                        tolerance: options.tolerance,
-                    });
-                } catch {
-                    crop = { w: 0, h: 0, x: 0, y: 0 };
-                }
+                    crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
+                } catch { crop = { w: 0, h: 0, x: 0, y: 0 }; }
             }
             itemsToProcess.push({ path: file.path, crop });
         }
 
         setProgressMsg("Processing files...");
-
         let unlisten: (() => void) | undefined;
         try {
             unlisten = await listen<ProgressEventPayload>("crop-progress", (event) => {
@@ -268,11 +227,11 @@ export default function App() {
                 setProgress(Math.min(pct, 100));
                 setProgressMsg(event.payload.message);
             });
-
             await invoke("process_files", { items: itemsToProcess, options });
-
             setFiles([]);
-            await openGallery();
+            // Switch to outputs tab and refresh
+            setTab("outputs");
+            setOutputsRefreshTick(t => t + 1);
         } catch (error) {
             toast.error(`Processing failed: ${String(error)}`);
         } finally {
@@ -283,31 +242,15 @@ export default function App() {
         }
     };
 
-    // ── Gallery ──────────────────────────────────────────────────────────────
-
-    const openGallery = async () => {
-        setGalleryLoading(true);
-        setShowGallery(true);
-        setLightboxIndex(null);
-        try {
-            const files = await invoke<OutputFile[]>("list_output_files");
-            setGalleryFiles(files);
-        } catch (err) {
-            toast.error(`Failed to load gallery: ${String(err)}`);
-        } finally {
-            setGalleryLoading(false);
-        }
-    };
-
-    const closeGallery = () => {
-        setShowGallery(false);
-        setLightboxIndex(null);
-        setGalleryFiles([]);
-    };
-
     // ── Render ──────────────────────────────────────────────────────────────
 
     const hasFiles = files.length > 0;
+
+    const tabDef: { id: Tab; label: string; icon: React.ReactNode }[] = [
+        { id: "queue", label: "Queue", icon: <Layers size={15} /> },
+        { id: "outputs", label: "Outputs", icon: <FolderOpen size={15} /> },
+        { id: "settings", label: "Settings", icon: <Settings size={15} /> },
+    ];
 
     return (
         <div
@@ -329,43 +272,88 @@ export default function App() {
                 }}
             />
 
-            {/* Main Content */}
             <main className="flex-1 flex flex-col relative h-full overflow-hidden">
                 {/* Header */}
                 <header
                     data-tauri-drag-region
                     className="h-[64px] flex items-center justify-between px-6 shrink-0 select-none"
-                    style={{
-                        borderBottom: `var(--border-w) solid var(--border)`,
-                        background: "var(--bg)",
-                    }}
+                    style={{ borderBottom: "var(--border-w) solid var(--border)", background: "var(--bg)" }}
                 >
+                    {/* Logo + Title */}
                     <div className="flex items-center gap-3 pointer-events-none">
-                        {/* Logo mark */}
-                        <div
-                            className="w-9 h-9 flex items-center justify-center font-display font-900 text-sm"
+                        <img
+                            src="/logo.png"
+                            alt="AutoCrop Pro"
                             style={{
-                                background: "var(--pink)",
-                                border: "var(--border-w) solid var(--border)",
+                                width: "36px",
+                                height: "36px",
                                 borderRadius: "10px",
+                                border: "var(--border-w) solid var(--border)",
                                 boxShadow: "var(--shadow)",
-                                color: "#fff",
-                                fontFamily: "'Nunito', sans-serif",
-                                fontWeight: 900,
+                                objectFit: "cover",
                             }}
-                        >
-                            AC
-                        </div>
+                        />
                         <h1
                             style={{
                                 fontFamily: "'Nunito', sans-serif",
                                 fontWeight: 800,
                                 fontSize: "1.1rem",
                                 letterSpacing: "-0.01em",
+                                margin: 0,
                             }}
                         >
                             AutoCrop Pro
                         </h1>
+                    </div>
+
+                    {/* Tab bar */}
+                    <div
+                        className="flex items-center gap-1 pointer-events-auto"
+                        style={{
+                            border: "var(--border-w) solid var(--border)",
+                            borderRadius: "14px",
+                            background: "var(--bg-card)",
+                            padding: "4px",
+                            boxShadow: "var(--shadow)",
+                        }}
+                    >
+                        {tabDef.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setTab(t.id)}
+                                className="flex items-center gap-2 transition-all duration-150"
+                                style={{
+                                    padding: "6px 14px",
+                                    borderRadius: "10px",
+                                    border: tab === t.id ? "var(--border-w) solid var(--border)" : "2px solid transparent",
+                                    background: tab === t.id ? "var(--text)" : "transparent",
+                                    color: tab === t.id ? "var(--bg)" : "var(--text-muted)",
+                                    fontFamily: "'Nunito', sans-serif",
+                                    fontWeight: 700,
+                                    fontSize: "0.82rem",
+                                    cursor: "pointer",
+                                    boxShadow: tab === t.id ? "2px 2px 0 var(--border)" : "none",
+                                }}
+                            >
+                                {t.icon}
+                                {t.label}
+                                {t.id === "queue" && hasFiles && (
+                                    <span
+                                        style={{
+                                            background: "var(--pink)",
+                                            color: "#fff",
+                                            borderRadius: "6px",
+                                            padding: "0 6px",
+                                            fontSize: "0.7rem",
+                                            fontWeight: 800,
+                                            border: "1px solid var(--border)",
+                                        }}
+                                    >
+                                        {files.length}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Theme toggle */}
@@ -386,83 +374,81 @@ export default function App() {
                     </button>
                 </header>
 
-                {/* Dropzone + Queue */}
-                <div className="flex-1 p-6 overflow-y-auto" style={{ gap: "1.5rem", display: "flex", flexDirection: "column" }}>
-                    {/* Dropzone */}
-                    <div
-                        {...getRootProps()}
-                        className={`relative w-full flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
-                        style={{
-                            minHeight: hasFiles ? "96px" : "220px",
-                            border: `var(--border-w) ${isDragHovering ? "solid" : "dashed"} var(--${isDragHovering ? "pink" : "border"})`,
-                            borderRadius: "var(--radius-xl)",
-                            background: isDragHovering
-                                ? "color-mix(in srgb, var(--pink) 8%, var(--bg))"
-                                : "var(--bg-card)",
-                            boxShadow: isDragHovering ? "var(--shadow-lg)" : "none",
-                            transform: isDragHovering ? "scale(1.01)" : "scale(1)",
-                        }}
-                    >
-                        <input {...getInputProps()} />
-                        <div className="flex flex-col items-center gap-3">
+                {/* Tab content */}
+                <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-5">
+                    {/* ── Queue Tab ─────────────────────────────────────────── */}
+                    {tab === "queue" && (
+                        <>
+                            {/* Dropzone */}
                             <div
-                                className="flex items-center justify-center transition-transform duration-300"
+                                onClick={handleDropzoneClick}
+                                className={`relative w-full flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
                                 style={{
-                                    width: hasFiles ? "44px" : "60px",
-                                    height: hasFiles ? "44px" : "60px",
-                                    borderRadius: "14px",
-                                    border: "var(--border-w) solid var(--border)",
-                                    background: isDragHovering ? "var(--pink)" : "var(--surface)",
-                                    boxShadow: "var(--shadow)",
-                                    color: isDragHovering ? "#fff" : "var(--pink)",
-                                    transition: "all 0.3s",
+                                    minHeight: hasFiles ? "96px" : "220px",
+                                    border: `var(--border-w) ${isDragHovering ? "solid" : "dashed"} var(--${isDragHovering ? "pink" : "border"})`,
+                                    borderRadius: "var(--radius-xl)",
+                                    background: isDragHovering ? "color-mix(in srgb, var(--pink) 8%, var(--bg))" : "var(--bg-card)",
+                                    boxShadow: isDragHovering ? "var(--shadow-lg)" : "none",
+                                    transform: isDragHovering ? "scale(1.01)" : "scale(1)",
                                 }}
                             >
-                                <UploadCloud size={hasFiles ? 20 : 28} strokeWidth={2} />
+                                <div className="flex flex-col items-center gap-3">
+                                    <div
+                                        className="flex items-center justify-center transition-all duration-300"
+                                        style={{
+                                            width: hasFiles ? "44px" : "60px",
+                                            height: hasFiles ? "44px" : "60px",
+                                            borderRadius: "14px",
+                                            border: "var(--border-w) solid var(--border)",
+                                            background: isDragHovering ? "var(--pink)" : "var(--surface)",
+                                            boxShadow: "var(--shadow)",
+                                            color: isDragHovering ? "#fff" : "var(--pink)",
+                                        }}
+                                    >
+                                        <UploadCloud size={hasFiles ? 20 : 28} strokeWidth={2} />
+                                    </div>
+                                    <div className="text-center">
+                                        <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: hasFiles ? "0.9rem" : "1.1rem", color: isDragHovering ? "var(--pink)" : "var(--text)", margin: 0 }}>
+                                            {isDragHovering ? "Release to add files" : "Drag & drop media files here"}
+                                        </p>
+                                        {!hasFiles && (
+                                            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>Or click to browse your files</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-center">
-                                <p
-                                    className="font-semibold"
-                                    style={{
-                                        fontFamily: "'Nunito', sans-serif",
-                                        fontWeight: 700,
-                                        fontSize: hasFiles ? "0.9rem" : "1.1rem",
-                                        color: isDragHovering ? "var(--pink)" : "var(--text)",
-                                    }}
-                                >
-                                    {isDragHovering ? "Release to add files" : "Drag & drop media files here"}
-                                </p>
-                                {!hasFiles && (
-                                    <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                                        Or click to browse your files
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* File Queue */}
-                    {hasFiles && (
-                        <FileQueue
-                            files={files}
-                            onPreviewFile={handlePreview}
-                            onRemoveFile={removeFile}
-                        />
+                            {hasFiles && (
+                                <FileQueue files={files} onPreviewFile={handlePreview} onRemoveFile={removeFile} />
+                            )}
+                        </>
+                    )}
+
+                    {/* ── Outputs Tab ───────────────────────────────────────── */}
+                    {tab === "outputs" && (
+                        <OutputsPanel refreshTick={outputsRefreshTick} />
+                    )}
+
+                    {/* ── Settings Tab ──────────────────────────────────────── */}
+                    {tab === "settings" && (
+                        <SettingsPanel />
                     )}
                 </div>
             </main>
 
-            {/* Settings Sidebar */}
-            <SettingsSidebar
-                options={options}
-                setOptions={setOptions}
-                hasFiles={hasFiles}
-                isProcessing={isProcessing}
-                progress={progress}
-                progressMsg={progressMsg}
-                filesCount={files.length}
-                onProcessAll={handleProcessAll}
-            />
+            {/* Settings Sidebar — only show when not on settings tab */}
+            {tab !== "settings" && (
+                <SettingsSidebar
+                    options={options}
+                    setOptions={setOptions}
+                    hasFiles={hasFiles}
+                    isProcessing={isProcessing}
+                    progress={progress}
+                    progressMsg={progressMsg}
+                    filesCount={files.length}
+                    onProcessAll={handleProcessAll}
+                />
+            )}
 
             {/* Preview Modal */}
             <PreviewModal
@@ -470,16 +456,6 @@ export default function App() {
                 closePreview={closePreview}
                 detectingCrop={detectingCrop}
                 detectedCrop={detectedCrop}
-            />
-
-            {/* Gallery Modal */}
-            <GalleryModal
-                showGallery={showGallery}
-                closeGallery={closeGallery}
-                galleryFiles={galleryFiles}
-                galleryLoading={galleryLoading}
-                lightboxIndex={lightboxIndex}
-                setLightboxIndex={setLightboxIndex}
             />
         </div>
     );

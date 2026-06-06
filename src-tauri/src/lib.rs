@@ -1,10 +1,10 @@
 use image::GenericImageView;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{mpsc, OnceLock};
-use tauri::{Emitter, Window};
+use tauri::{Emitter, Manager, Window};
 
 // ── Shared Types ────────────────────────────────────────────────────────────
 
@@ -173,14 +173,12 @@ async fn detect_crop_areas(file_path: String, tolerance: f32) -> Result<CropArea
 
 #[tauri::command]
 async fn process_files(
+    app: tauri::AppHandle,
     window: Window,
     items: Vec<ProcessItem>,
     options: ProcessOptions,
 ) -> Result<(), String> {
-    let output_dir = dirs::document_dir()
-        .ok_or("Could not find system Documents folder")?
-        .join("AutoCrop_Output");
-
+    let output_dir = get_output_dir(&app);
     std::fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
 
     let total = items.len();
@@ -336,18 +334,115 @@ fn process_single_image(
     }
 }
 
+// ── Config / Save Location ──────────────────────────────────────────────────
+
+fn config_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|p| p.join("config.json"))
+        .map_err(|e| e.to_string())
+}
+
+fn get_output_dir(app: &tauri::AppHandle) -> PathBuf {
+    if let Ok(cfg_path) = config_file_path(app) {
+        if cfg_path.exists() {
+            if let Ok(raw) = std::fs::read_to_string(&cfg_path) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
+                    if let Some(s) = val["save_location"].as_str() {
+                        let p = PathBuf::from(s);
+                        if !s.is_empty() {
+                            return p;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    dirs::document_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("AutoCrop_Output")
+}
+
+#[tauri::command]
+fn get_save_location(app: tauri::AppHandle) -> String {
+    get_output_dir(&app).to_string_lossy().to_string()
+}
+
+#[tauri::command]
+fn set_save_location(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let cfg = config_file_path(&app)?;
+    if let Some(parent) = cfg.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let json = serde_json::json!({ "save_location": path });
+    std::fs::write(&cfg, json.to_string()).map_err(|e| e.to_string())
+}
+
+/// Opens a native folder-picker dialog via PowerShell (Windows) and returns the chosen path.
+#[tauri::command]
+fn pick_save_folder() -> Result<Option<String>, String> {
+    let script = concat!(
+        "Add-Type -AssemblyName System.Windows.Forms; ",
+        "$d = New-Object System.Windows.Forms.FolderBrowserDialog; ",
+        "$d.Description = 'Select output folder for AutoCrop Pro'; ",
+        "$d.ShowNewFolderButton = $true; ",
+        "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) ",
+        "{ Write-Output $d.SelectedPath }"
+    );
+
+    let out = std::process::Command::new("powershell")
+        .args(["-WindowStyle", "Hidden", "-NonInteractive", "-Command", script])
+        .output()
+        .map_err(|e| format!("Failed to open folder picker: {}", e))?;
+
+    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    Ok(if path.is_empty() { None } else { Some(path) })
+}
+
+/// Opens the file explorer with the given file selected (Windows: `explorer /select,<path>`).
+#[tauri::command]
+fn reveal_in_explorer(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg("/select,")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .args(["-R", &path])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        // xdg-open doesn't support /select, so open the parent directory
+        if let Some(parent) = Path::new(&path).parent() {
+            std::process::Command::new("xdg-open")
+                .arg(parent)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+// ── Output File Listing ─────────────────────────────────────────────────────
+
 #[derive(Serialize, Clone, Debug)]
 pub struct OutputFile {
     pub name: String,
     pub path: String,
     pub file_type: String,
+    pub modified_at: u64, // Unix timestamp seconds, for newest-first sorting
 }
 
 #[tauri::command]
-fn list_output_files() -> Result<Vec<OutputFile>, String> {
-    let output_dir = dirs::document_dir()
-        .ok_or("Could not find system Documents folder")?
-        .join("AutoCrop_Output");
+fn list_output_files(app: tauri::AppHandle) -> Result<Vec<OutputFile>, String> {
+    let output_dir = get_output_dir(&app);
 
     if !output_dir.exists() {
         return Ok(vec![]);
@@ -363,11 +458,7 @@ fn list_output_files() -> Result<Vec<OutputFile>, String> {
         }
 
         let ext = get_extension(&path);
-        let file_type = if is_video(&ext) {
-            "video".to_string()
-        } else {
-            "image".to_string()
-        };
+        let file_type = if is_video(&ext) { "video" } else { "image" }.to_string();
 
         let name = path
             .file_name()
@@ -375,24 +466,31 @@ fn list_output_files() -> Result<Vec<OutputFile>, String> {
             .unwrap_or("unknown")
             .to_string();
 
+        // Read modification time for newest-first sorting
+        let modified_at = path
+            .metadata()
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
         files.push(OutputFile {
             name,
             path: path.to_string_lossy().to_string(),
             file_type,
+            modified_at,
         });
     }
 
-    // Sort by name
-    files.sort_by(|a, b| a.name.cmp(&b.name));
+    // Sort newest first
+    files.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     Ok(files)
 }
 
 #[tauri::command]
-fn open_output_folder() -> Result<(), String> {
-    let output_dir = dirs::document_dir()
-        .ok_or("Could not find system Documents folder")?
-        .join("AutoCrop_Output");
-
+fn open_output_folder(app: tauri::AppHandle) -> Result<(), String> {
+    let output_dir = get_output_dir(&app);
     std::fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
 
     #[cfg(target_os = "windows")]
@@ -804,11 +902,16 @@ mod tests {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             detect_crop_areas,
             process_files,
             open_output_folder,
-            list_output_files
+            list_output_files,
+            get_save_location,
+            set_save_location,
+            pick_save_folder,
+            reveal_in_explorer
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
