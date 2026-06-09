@@ -1,35 +1,45 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ── Theme ─────────────────────────────────────────────────────
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Theme (dark default, html.dark for dark mode) ─────────────
   const root = document.documentElement;
   const themeToggle = document.getElementById('theme-toggle');
   const savedTheme = localStorage.getItem('theme');
 
   if (savedTheme === 'light') {
-    root.classList.add('light');
+    root.classList.remove('dark');
+  } else {
+    root.classList.add('dark');
   }
 
   themeToggle?.addEventListener('click', () => {
-    root.classList.toggle('light');
-    localStorage.setItem('theme', root.classList.contains('light') ? 'light' : 'dark');
+    root.classList.toggle('dark');
+    localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
   });
 
-  // ── Mobile nav ────────────────────────────────────────────────
+  // ── Mobile nav + overlay ──────────────────────────────────────
   const navToggle = document.getElementById('nav-toggle');
   const navMobile = document.getElementById('nav-mobile');
+  const navOverlay = document.getElementById('nav-overlay');
+
+  function setNavOpen(open) {
+    navToggle?.setAttribute('aria-expanded', String(open));
+    navMobile?.classList.toggle('open', open);
+    navOverlay?.classList.toggle('open', open);
+    navMobile?.toggleAttribute('hidden', !open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
 
   navToggle?.addEventListener('click', () => {
     const open = navToggle.getAttribute('aria-expanded') === 'true';
-    navToggle.setAttribute('aria-expanded', String(!open));
-    navMobile?.classList.toggle('open', !open);
-    navMobile?.removeAttribute('hidden');
+    setNavOpen(!open);
   });
 
+  navOverlay?.addEventListener('click', () => setNavOpen(false));
+
   navMobile?.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      navToggle?.setAttribute('aria-expanded', 'false');
-      navMobile?.classList.remove('open');
-    });
+    link.addEventListener('click', () => setNavOpen(false));
   });
 
   // ── Scroll progress + header ──────────────────────────────────
@@ -50,61 +60,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Reveal on scroll ──────────────────────────────────────────
   const revealEls = document.querySelectorAll('.reveal');
-  const revealObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-  );
-  revealEls.forEach(el => revealObserver.observe(el));
 
-  // ── Stat counters ─────────────────────────────────────────────
-  const statNumbers = document.querySelectorAll('.stat-number[data-target]');
-  const statsObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        const el = entry.target;
-        const target = parseInt(el.dataset.target, 10);
-        const suffix = el.dataset.suffix || '';
-        const duration = 1200;
-        const start = performance.now();
-
-        function tick(now) {
-          const progress = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          el.textContent = Math.round(target * eased) + suffix;
-          if (progress < 1) requestAnimationFrame(tick);
-        }
-
-        requestAnimationFrame(tick);
-        statsObserver.unobserve(el);
-      });
-    },
-    { threshold: 0.5 }
-  );
-
-  statNumbers.forEach(el => statsObserver.observe(el));
-
-  document.querySelectorAll('.stat-number[data-text]').forEach(el => {
-    const textObserver = new IntersectionObserver(
+  if (prefersReducedMotion) {
+    revealEls.forEach(el => el.classList.add('visible'));
+  } else {
+    const revealObserver = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            entry.target.textContent = entry.target.dataset.text;
-            textObserver.unobserve(entry.target);
+            entry.target.classList.add('visible');
+            revealObserver.unobserve(entry.target);
           }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+    revealEls.forEach(el => revealObserver.observe(el));
+  }
+
+  // ── Stat counters ─────────────────────────────────────────────
+  const statNumbers = document.querySelectorAll('.stat-number[data-target]');
+
+  if (prefersReducedMotion) {
+    statNumbers.forEach(el => {
+      const target = parseInt(el.dataset.target, 10);
+      el.textContent = target + (el.dataset.suffix || '');
+    });
+    document.querySelectorAll('.stat-number[data-text]').forEach(el => {
+      el.textContent = el.dataset.text;
+    });
+  } else {
+    const statsObserver = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          const target = parseInt(el.dataset.target, 10);
+          const suffix = el.dataset.suffix || '';
+          const duration = 1200;
+          const start = performance.now();
+
+          function tick(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(target * eased) + suffix;
+            if (progress < 1) requestAnimationFrame(tick);
+          }
+
+          requestAnimationFrame(tick);
+          statsObserver.unobserve(el);
         });
       },
       { threshold: 0.5 }
     );
-    textObserver.observe(el);
-  });
+
+    statNumbers.forEach(el => statsObserver.observe(el));
+
+    document.querySelectorAll('.stat-number[data-text]').forEach(el => {
+      const textObserver = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.textContent = entry.target.dataset.text;
+              textObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.5 }
+      );
+      textObserver.observe(el);
+    });
+  }
 
   // ── Steps progress on scroll ──────────────────────────────────
   const stepsSection = document.getElementById('how-it-works');
@@ -112,32 +138,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const stepCards = document.querySelectorAll('.step-card');
 
   if (stepsSection && stepsFill) {
-    const stepsObserver = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          const ratio = entry.intersectionRatio;
-          const idx = Math.min(Math.floor(ratio * 3) + (ratio > 0.3 ? 1 : 0), 3);
-          stepsFill.style.width = (idx / 3 * 100) + '%';
-          stepCards.forEach((card, i) => {
-            card.classList.toggle('active', i < idx);
+    if (prefersReducedMotion) {
+      stepsFill.style.width = '100%';
+      stepCards.forEach(card => card.classList.add('active'));
+    } else {
+      const stepsObserver = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const ratio = entry.intersectionRatio;
+            const idx = Math.min(Math.floor(ratio * 3) + (ratio > 0.3 ? 1 : 0), 3);
+            stepsFill.style.width = (idx / 3 * 100) + '%';
+            stepCards.forEach((card, i) => {
+              card.classList.toggle('active', i < idx);
+            });
           });
-        });
-      },
-      { threshold: [0, 0.25, 0.5, 0.75, 1], rootMargin: '-20% 0px' }
-    );
-    stepsObserver.observe(stepsSection);
+        },
+        { threshold: [0, 0.25, 0.5, 0.75, 1], rootMargin: '-20% 0px' }
+      );
+      stepsObserver.observe(stepsSection);
 
-    window.addEventListener('scroll', () => {
-      const rect = stepsSection.getBoundingClientRect();
-      const vh = window.innerHeight;
-      if (rect.top < vh * 0.7 && rect.bottom > vh * 0.3) {
-        const progress = Math.min(Math.max((vh * 0.7 - rect.top) / (rect.height * 0.6), 0), 1);
-        stepsFill.style.width = (progress * 100) + '%';
-        const activeStep = Math.min(Math.ceil(progress * 3), 3);
-        stepCards.forEach((card, i) => card.classList.toggle('active', i < activeStep));
-      }
-    }, { passive: true });
+      window.addEventListener('scroll', () => {
+        const rect = stepsSection.getBoundingClientRect();
+        const vh = window.innerHeight;
+        if (rect.top < vh * 0.7 && rect.bottom > vh * 0.3) {
+          const progress = Math.min(Math.max((vh * 0.7 - rect.top) / (rect.height * 0.6), 0), 1);
+          stepsFill.style.width = (progress * 100) + '%';
+          const activeStep = Math.min(Math.ceil(progress * 3), 3);
+          stepCards.forEach((card, i) => card.classList.toggle('active', i < activeStep));
+        }
+      }, { passive: true });
+    }
   }
 
   // ── Pain track carousel ───────────────────────────────────────
@@ -170,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = painCards[index];
       if (!card) return;
       const offset = card.offsetLeft - painTrack.offsetLeft;
-      painTrack.scrollTo({ left: offset, behavior: 'smooth' });
+      painTrack.scrollTo({ left: offset, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     }
 
     function getActiveIndex() {
@@ -215,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
       painTrack.classList.remove('is-dragging');
     }
 
-    // Horizontal overflow steals vertical wheel — forward it to the page
     painTrack.addEventListener('wheel', e => {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       e.preventDefault();
@@ -407,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (status) { status.textContent = 'Queued'; status.className = 'batch-status'; }
     });
 
-    log('AutoCrop Pro Rust core v0.1.0', 'log-system');
+    log('AutoCrop Pro Rust core v0.1.4', 'log-system');
     await new Promise(r => setTimeout(r, 150));
     log('Spawning Rayon worker threads…', 'log-info');
     await new Promise(r => setTimeout(r, 200));
@@ -448,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Smooth anchor offset for fixed header ─────────────────────
+  // ── Smooth anchor offset for floating header ──────────────────
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', e => {
       const id = anchor.getAttribute('href');
@@ -456,9 +486,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const target = document.querySelector(id);
       if (!target) return;
       e.preventDefault();
-      const offset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'), 10) || 72;
-      const top = target.getBoundingClientRect().top + window.scrollY - offset - 16;
-      window.scrollTo({ top, behavior: 'smooth' });
+      const offset = 100;
+      const y = target.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: y, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     });
   });
 
