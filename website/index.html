@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#09090f">
+
+  <title>AutoCrop Pro — Batch Crop Black Borders (Free, Offline)</title>
+  <meta name="description" content="Batch crop letterboxes and black borders from 500+ images and videos on Windows. 100% offline, open source (MIT), live preview. Free — no cloud uploads.">
+  <meta name="author" content="AutoCrop Pro">
+  <meta name="application-name" content="AutoCrop Pro">
+
+  <link rel="canonical" href="https://eact6.github.io/autocrop-pro/">
+  <link rel="icon" href="logo-app.png" type="image/png">
+  <link rel="alternate" type="text/plain" href="llms.txt" title="LLM context">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="AutoCrop Pro">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="AutoCrop Pro — Batch Crop Black Borders (Free, Offline)">
+  <meta property="og:description" content="Batch crop letterboxes from images and videos locally on Windows. Rust parallel processing, live preview, zero uploads. Free and open source.">
+  <meta property="og:url" content="https://eact6.github.io/autocrop-pro/">
+  <meta property="og:image" content="https://eact6.github.io/autocrop-pro/logo-app.png">
+  <meta property="og:image:alt" content="AutoCrop Pro app icon — batch crop black borders offline">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AutoCrop Pro — Batch Crop Black Borders Offline">
+  <meta name="twitter:description" content="Free Windows app to batch crop letterboxes from images and videos. 100% offline. Open source.">
+  <meta name="twitter:image" content="https://eact6.github.io/autocrop-pro/logo-app.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://eact6.github.io/autocrop-pro/#organization",
+        "name": "AutoCrop Pro",
+        "url": "https://eact6.github.io/autocrop-pro/",
+        "logo": "https://eact6.github.io/autocrop-pro/logo-app.png",
+        "sameAs": ["https://github.com/eact6/autocrop-pro"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://eact6.github.io/autocrop-pro/#website",
+        "url": "https://eact6.github.io/autocrop-pro/",
+        "name": "AutoCrop Pro",
+        "description": "Free offline Windows app for batch cropping black borders and letterboxes from images and videos.",
+        "publisher": { "@id": "https://eact6.github.io/autocrop-pro/#organization" },
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://eact6.github.io/autocrop-pro/#software",
+        "name": "AutoCrop Pro",
+        "url": "https://eact6.github.io/autocrop-pro/",
+        "image": "https://eact6.github.io/autocrop-pro/logo-app.png",
+        "operatingSystem": "Windows 10, Windows 11",
+        "applicationCategory": "MultimediaApplication",
+        "applicationSubCategory": "Video Editing Software",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "description": "A native Windows desktop app that automatically detects and crops black borders, letterboxes, and pillarboxes from images and videos in batch, using Rust parallel processing and FFmpeg cropdetect.",
+        "softwareVersion": "0.1.0",
+        "license": "https://opensource.org/licenses/MIT",
+        "downloadUrl": "https://github.com/eact6/autocrop-pro/releases",
+        "featureList": "Batch crop, offline processing, live preview, tolerance slider, parallel Rust backend, FFmpeg cropdetect for video",
+        "requirements": "WebView2 Runtime; FFmpeg on PATH for video support",
+        "author": { "@id": "https://eact6.github.io/autocrop-pro/#organization" }
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to batch crop black borders with AutoCrop Pro",
+        "description": "Three-step workflow to remove letterboxes from hundreds of images and videos on Windows.",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Drop your files",
+            "text": "Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or other supported formats onto the app. Process hundreds at once."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Preview and tune",
+            "text": "Click any file to see the crop overlay. Adjust the tolerance slider until borders snap perfectly without manual pixel math."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Batch export",
+            "text": "Click process. Cropped files save to Documents/AutoCrop_Output/. Originals stay untouched unless you enable delete originals."
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is AutoCrop Pro?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AutoCrop Pro is a free, open-source Windows desktop app that automatically detects and removes black borders, letterboxes, and pillarboxes from images and videos in batch. It runs 100% offline using a Rust parallel backend and FFmpeg cropdetect for video."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does AutoCrop Pro need an internet connection?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. It is a native Tauri app that runs entirely on your PC. No files, telemetry, or tracking leaves your machine."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does edge detection work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "For images, the Rust backend builds per-row and per-column brightness histograms and sweeps inward from each edge. For videos, it runs FFmpeg cropdetect on 30 sample frames and parses the optimal crop region."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is FFmpeg required?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Only for video. Install FFmpeg and add it to your Windows PATH. Image cropping works immediately with no extra dependencies."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where do cropped files go?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Cropped files save to %USERPROFILE%\\Documents\\AutoCrop_Output\\ as {original}_cropped.{ext}. Source files are never modified unless you enable Delete Originals."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What file formats does AutoCrop Pro support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Images: JPG, PNG, WEBP, BMP, GIF, TIFF. Videos: MP4, MOV, MKV, AVI, WEBM, FLV. Video processing requires FFmpeg on your PATH."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is AutoCrop Pro different from FFmpeg cropdetect scripts?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AutoCrop Pro wraps FFmpeg cropdetect and Rust edge detection in a visual interface with live preview, batch queue, and parallel processing. You avoid writing one-off shell scripts and see exactly what will be cropped before processing hundreds of files."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "macOS or Linux support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Rust core is cross-platform. Current installers target Windows 10/11 (MSI and NSIS). macOS and Linux packages are planned."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <div id="scroll-progress" aria-hidden="true"></div>
+
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a href="https://eact6.github.io/autocrop-pro/" class="logo-link" aria-label="AutoCrop Pro home">
+        <img src="logo-app.png" alt="AutoCrop Pro logo" class="logo-mark" width="36" height="36">
+        <span class="logo-wordmark">AutoCrop <span class="logo-pro">Pro</span></span>
+      </a>
+      <nav class="nav-desktop" aria-label="Main navigation">
+        <a href="#pain">The problem</a>
+        <a href="#simulator">Try it</a>
+        <a href="#features">Features</a>
+        <a href="#open-source">Open source</a>
+        <a href="#compare-tools">Compare</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" aria-label="Toggle color theme">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a href="https://github.com/eact6/autocrop-pro/releases" class="btn btn-primary btn-sm" id="btn-download-nav">Get Open Source App</a>
+        <button class="icon-btn nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <nav class="nav-mobile" id="nav-mobile" aria-label="Mobile navigation">
+      <a href="#pain">The problem</a>
+      <a href="#simulator">Try it</a>
+      <a href="#features">Features</a>
+      <a href="#open-source">Open source</a>
+      <a href="#compare-tools">Compare</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/eact6/autocrop-pro/releases" class="btn btn-primary">Get Open Source App</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ── Hero ── -->
+    <section class="hero" id="hero">
+      <div class="hero-bg" aria-hidden="true">
+        <div class="hero-glow hero-glow-1"></div>
+        <div class="hero-glow hero-glow-2"></div>
+        <div class="hero-grid-lines"></div>
+      </div>
+      <div class="container hero-content">
+        <div class="hero-text reveal">
+          <span class="eyebrow eyebrow-oss">Open Source · MIT License · Free Forever</span>
+          <h1>Batch crop black borders from images &amp; videos <em>offline</em></h1>
+          <p class="hero-lead"><strong>AutoCrop Pro</strong> is a free Windows app that removes letterboxes, pillarboxes, and black bars from hundreds of files in one run — no Premiere timelines, no cloud uploads, no FFmpeg scripts. Drag a folder, preview the crop, and process in parallel on your CPU.</p>
+          <ul class="hero-checklist">
+            <li>100% open source — read the code, fork it, ship your own builds</li>
+            <li>Batch-process hundreds of images &amp; videos in parallel</li>
+            <li>Files never leave your hard drive — zero cloud uploads</li>
+            <li>Live crop overlay with a single tolerance slider</li>
+          </ul>
+          <div class="hero-cta">
+            <a href="https://github.com/eact6/autocrop-pro/releases" class="btn btn-primary btn-lg" id="btn-download-hero">
+              Download for Windows
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+            <a href="#simulator" class="btn btn-ghost btn-lg" id="btn-try-simulator">Try the crop simulator</a>
+          </div>
+          <p class="hero-note">No account · No subscription · FFmpeg required for video only</p>
+        </div>
+        <div class="hero-visual reveal reveal-delay-2" id="simulator">
+          <div class="app-window">
+            <div class="app-window-bar">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="app-window-title">Crop Tolerance Playground</span>
+            </div>
+            <div class="app-window-body">
+              <div class="crop-canvas-wrap" aria-label="Simulated widescreen image with letterbox borders">
+                <svg class="crop-scene" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="1920" height="1080" fill="#0f0a1a"/>
+                  <circle cx="300" cy="280" r="2" fill="#fff" opacity="0.5"/>
+                  <circle cx="800" cy="200" r="3" fill="#fff" opacity="0.7"/>
+                  <circle cx="1400" cy="320" r="2" fill="#fff" opacity="0.4"/>
+                  <circle cx="1700" cy="180" r="4" fill="#fff" opacity="0.6"/>
+                  <circle cx="960" cy="460" r="120" fill="#e8006e" opacity="0.9"/>
+                  <circle cx="960" cy="460" r="90" fill="#ffd231"/>
+                  <polygon points="0,680 400,420 800,680" fill="#3d1a52"/>
+                  <polygon points="600,680 960,360 1320,680" fill="#2a1040"/>
+                  <polygon points="1100,680 1500,450 1920,680" fill="#3d1a52"/>
+                  <path d="M0 680 L1920 680 L1920 920 L0 920 Z" fill="#080510"/>
+                  <line x1="960" y1="680" x2="0" y2="920" stroke="#3ecf8e" stroke-width="3" opacity="0.6"/>
+                  <line x1="960" y1="680" x2="1920" y2="920" stroke="#3ecf8e" stroke-width="3" opacity="0.6"/>
+                  <line x1="960" y1="680" x2="960" y2="920" stroke="#3ecf8e" stroke-width="2" opacity="0.4"/>
+                  <line x1="0" y1="720" x2="1920" y2="720" stroke="#22d3ee" stroke-width="1.5" opacity="0.3"/>
+                  <line x1="0" y1="780" x2="1920" y2="780" stroke="#22d3ee" stroke-width="1.5" opacity="0.3"/>
+                  <rect x="0" y="0" width="1920" height="130" fill="#000"/>
+                  <rect x="0" y="950" width="1920" height="130" fill="#000"/>
+                </svg>
+                <div id="crop-box" class="crop-overlay">
+                  <span class="crop-handle tl"></span>
+                  <span class="crop-handle tr"></span>
+                  <span class="crop-handle bl"></span>
+                  <span class="crop-handle br"></span>
+                  <span id="crop-dims" class="crop-dims">1920 × 800</span>
+                </div>
+              </div>
+              <div class="sim-controls">
+                <label for="tolerance-slider" class="sim-label">
+                  Tolerance
+                  <span id="tolerance-value" class="sim-value">20%</span>
+                </label>
+                <input type="range" id="tolerance-slider" class="sim-slider" min="0" max="100" value="20" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20">
+                <div class="sim-status">
+                  <span id="sim-stat-left" class="sim-stat">Exact borders detected</span>
+                  <span id="sim-stat-right" class="sim-stat sim-stat-ok">Optimal sweep</span>
+                </div>
+                <p class="sim-hint">Below 13% misses borders. Above 45% clips into your content.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-scroll-hint" aria-hidden="true">
+        <span>Scroll</span>
+        <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <!-- ── Format marquee ── -->
+    <section class="marquee-section" aria-label="Supported file formats">
+      <div class="marquee-track">
+        <div class="marquee-content">
+          <span>JPG</span><span>PNG</span><span>WEBP</span><span>BMP</span><span>GIF</span><span>TIFF</span>
+          <span class="marquee-dot">·</span>
+          <span>MP4</span><span>MOV</span><span>MKV</span><span>AVI</span><span>WEBM</span><span>FLV</span>
+          <span class="marquee-dot">·</span>
+          <span>JPG</span><span>PNG</span><span>WEBP</span><span>BMP</span><span>GIF</span><span>TIFF</span>
+          <span class="marquee-dot">·</span>
+          <span>MP4</span><span>MOV</span><span>MKV</span><span>AVI</span><span>WEBM</span><span>FLV</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Stats ── -->
+    <section class="stats-bar" aria-label="Key metrics">
+      <div class="container stats-grid">
+        <div class="stat-item reveal">
+          <span class="stat-number" data-target="100" data-suffix="%">0</span>
+          <span class="stat-label">Offline — no cloud uploads</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-1">
+          <span class="stat-number" data-target="0" data-suffix=" MB">0</span>
+          <span class="stat-label">Data sent to servers</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-2">
+          <span class="stat-number" data-target="500" data-prefix="" data-suffix="+">0</span>
+          <span class="stat-label">Files per batch run</span>
+        </div>
+        <div class="stat-item reveal reveal-delay-3">
+          <span class="stat-number" data-text="Parallel">—</span>
+          <span class="stat-label">Rayon multi-core threads</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Definition (AI-extractable) ── -->
+    <section class="section definition-section" id="what-is-autocrop">
+      <div class="container narrow">
+        <h2>What is AutoCrop Pro?</h2>
+        <p class="definition-lead">AutoCrop Pro is a free, open-source Windows desktop app that automatically detects and removes black borders, letterboxes, and pillarboxes from images and videos in batch. It runs <strong>100% offline</strong> on your PC using a Rust parallel backend (Rayon) for images and FFmpeg <code>cropdetect</code> on 30 sample frames for video — with a live preview overlay and a single tolerance slider.</p>
+        <p class="definition-meta">Last updated: June 9, 2026 · MIT License · <a href="https://github.com/eact6/autocrop-pro">Source on GitHub</a></p>
+      </div>
+    </section>
+
+    <!-- ── Pain Points ── -->
+    <section class="section pain-section" id="pain">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow eyebrow-warn">The real problem</span>
+          <h2>Black bars aren't hard to crop.<br><em>Doing it 200 times is.</em></h2>
+          <p class="section-lead">Every editor, archivist, and content team hits the same wall. The crop itself takes seconds. The workflow around it eats your week.</p>
+        </div>
+      </div>
+
+      <div class="pain-scroll-wrap">
+        <div class="pain-fade pain-fade-left" aria-hidden="true"></div>
+        <div class="pain-fade pain-fade-right" aria-hidden="true"></div>
+        <button type="button" class="pain-nav pain-nav-prev" id="pain-prev" aria-label="Previous problem card" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="pain-nav pain-nav-next" id="pain-next" aria-label="Next problem card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="pain-track" id="pain-track">
+          <article class="pain-card reveal">
+            <header class="pain-card-head">
+              <span class="pain-number">01</span>
+              <div class="pain-icon" aria-hidden="true">
+                <!-- Lucide: timer -->
+                <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+              </div>
+            </header>
+            <h3>The Premiere trap</h3>
+            <blockquote class="pain-quote">"I just need to strip letterboxes — not open a full timeline for each clip."</blockquote>
+            <p class="pain-body">You import one file, set crop, export, repeat. For a folder of screen recordings or digitized VHS rips, that's an entire afternoon gone. AutoCrop Pro processes the whole folder while you grab coffee.</p>
+            <footer class="pain-stat">
+              <div class="pain-stat-line">
+                <span class="pain-stat-item"><strong>~3 min</strong><span class="pain-stat-label">per file manually</span></span>
+                <span class="pain-stat-arrow" aria-hidden="true">→</span>
+                <span class="pain-stat-item"><strong>&lt;1 sec</strong><span class="pain-stat-label">each in batch</span></span>
+              </div>
+            </footer>
+          </article>
+
+          <article class="pain-card reveal">
+            <header class="pain-card-head">
+              <span class="pain-number">02</span>
+              <div class="pain-icon" aria-hidden="true">
+                <!-- Lucide: shield-check -->
+                <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+            </header>
+            <h3>The upload you can't afford</h3>
+            <blockquote class="pain-quote">"My client's NDA footage is not going on some random website."</blockquote>
+            <p class="pain-body">Online croppers want you to upload gigabytes of video over Wi-Fi. Slow, lossy, and a security nightmare for agencies handling sensitive media. AutoCrop Pro never touches the internet. Your files stay on your machine.</p>
+            <footer class="pain-stat">
+              <div class="pain-stat-line">
+                <span class="pain-stat-item"><strong>0 bytes</strong><span class="pain-stat-label">uploaded</span></span>
+                <span class="pain-stat-arrow" aria-hidden="true">→</span>
+                <span class="pain-stat-item"><strong>100%</strong><span class="pain-stat-label">local</span></span>
+              </div>
+            </footer>
+          </article>
+
+          <article class="pain-card reveal">
+            <header class="pain-card-head">
+              <span class="pain-number">03</span>
+              <div class="pain-icon" aria-hidden="true">
+                <!-- Lucide: terminal -->
+                <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+              </div>
+            </header>
+            <h3>The FFmpeg gamble</h3>
+            <blockquote class="pain-quote">"I know cropdetect works — I just don't trust myself with 400 files."</blockquote>
+            <p class="pain-body">One wrong flag in a batch script and you've re-encoded an entire archive with artifacts — or worse, corrupted outputs. AutoCrop Pro gives you FFmpeg's power with a visual preview, so you see exactly what gets cropped before you commit.</p>
+            <footer class="pain-stat">
+              <div class="pain-stat-line">
+                <span class="pain-stat-item"><strong>CLI risk</strong><span class="pain-stat-label">batch scripts</span></span>
+                <span class="pain-stat-arrow" aria-hidden="true">→</span>
+                <span class="pain-stat-item"><strong>Visual control</strong><span class="pain-stat-label">live preview</span></span>
+              </div>
+            </footer>
+          </article>
+
+          <article class="pain-card reveal">
+            <header class="pain-card-head">
+              <span class="pain-number">04</span>
+              <div class="pain-icon" aria-hidden="true">
+                <!-- Lucide: sparkles -->
+                <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+              </div>
+            </header>
+            <h3>The quality death spiral</h3>
+            <blockquote class="pain-quote">"I cropped it twice and now it looks like a potato."</blockquote>
+            <p class="pain-body">Every re-encode through a web tool or sloppy export adds compression damage. AutoCrop Pro offers lossless PNG output, or copies the original wrapper to preserve quality. Crop once, crop right.</p>
+            <footer class="pain-stat">
+              <div class="pain-stat-line">
+                <span class="pain-stat-item"><strong>Lossless PNG</strong><span class="pain-stat-label">zero artifacts</span></span>
+                <span class="pain-stat-arrow" aria-hidden="true">→</span>
+                <span class="pain-stat-item"><strong>Keep original</strong><span class="pain-stat-label">no re-encode</span></span>
+              </div>
+            </footer>
+          </article>
+        </div>
+        <div class="pain-controls">
+          <div class="pain-dots" id="pain-dots" role="tablist" aria-label="Problem cards"></div>
+          <div class="pain-scroll-hint" aria-hidden="true">← drag or use arrows →</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Before / After ── -->
+    <section class="section compare-section" id="compare">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow">Before &amp; after</span>
+          <h2>See what one batch run looks like</h2>
+        </div>
+        <div class="compare-widget reveal">
+          <div class="compare-slider-wrap" id="compare-slider-wrap">
+            <div class="compare-before" aria-label="Image with black letterbox borders">
+              <div class="compare-frame compare-frame-before">
+                <div class="compare-bar top"></div>
+                <div class="compare-content">
+                  <div class="compare-scene"></div>
+                </div>
+                <div class="compare-bar bottom"></div>
+              </div>
+              <span class="compare-label">Before — 1920×1080 with letterboxes</span>
+            </div>
+            <div class="compare-after" aria-label="Cropped image without borders">
+              <div class="compare-frame compare-frame-after">
+                <div class="compare-content compare-content-full">
+                  <div class="compare-scene"></div>
+                </div>
+              </div>
+              <span class="compare-label">After — 1920×800 clean frame</span>
+            </div>
+            <input type="range" id="compare-range" class="compare-range" min="0" max="100" value="50" aria-label="Drag to compare before and after crop">
+            <div class="compare-handle" id="compare-handle" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Features ── -->
+    <section class="section features-section" id="features">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow">Under the hood</span>
+          <h2>Built for speed, precision, and privacy</h2>
+          <p class="section-lead">Rust parallel processing on the backend. A visual dashboard on the front. No compromises.</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card reveal">
+            <div class="feature-icon">
+              <!-- Lucide: zap -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13.5 10H20a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 10.5 14z"/></svg>
+            </div>
+            <h3>Parallel batch processing</h3>
+            <p>Rayon distributes work across every CPU core. Drop 500 files, click process, and watch them fly through the queue.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-1">
+            <div class="feature-icon">
+              <!-- Lucide: scan-search -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></svg>
+            </div>
+            <h3>Dual edge detectors</h3>
+            <p>Images get pixel histogram sweeps with a 1% noise floor. Videos run FFmpeg cropdetect across 30 sample frames for accurate widescreen boundaries.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-2">
+            <div class="feature-icon">
+              <!-- Lucide: scan-line (live crop overlay preview) -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+            </div>
+            <h3>Live preview overlay</h3>
+            <p>Click any queued file to see the detected crop region. Drag the tolerance slider and watch boundaries update in real time.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-3">
+            <div class="feature-icon">
+              <!-- Lucide: expand -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 15 6 6"/><path d="m15 9 6-6"/><path d="M21 16v5h-5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="m3 21 6-6"/><path d="M3 8V3h5"/><path d="M9 9 3 3"/></svg>
+            </div>
+            <h3>Safe border padding</h3>
+            <p>Toggle a 10px buffer so the detector never clips subtitles, captions, or edge content you want to keep.</p>
+          </article>
+          <article class="feature-card reveal">
+            <div class="feature-icon">
+              <!-- Lucide: download -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            </div>
+            <h3>Flexible output formats</h3>
+            <p>Export lossless PNG for design assets, compressed JPEG or WebP for web, or keep the original file wrapper untouched.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-1">
+            <div class="feature-icon">
+              <!-- Lucide: images -->
+              <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>
+            </div>
+            <h3>Output gallery built in</h3>
+            <p>After processing, browse cropped files in a lightbox gallery. Open the output folder with one click.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Open Source ── -->
+    <section class="section oss-section" id="open-source">
+      <div class="container oss-grid reveal">
+        <div class="oss-content">
+          <span class="eyebrow eyebrow-oss">Open source</span>
+          <h2>Free forever. Inspect everything.</h2>
+          <p class="section-lead">No subscriptions, no license keys, no black-box uploads. AutoCrop Pro is MIT-licensed — read the Rust backend on GitHub, fork it, contribute fixes, and ship your own builds.</p>
+          <ul class="oss-list">
+            <li>Full source code public on GitHub</li>
+            <li>MIT License — use it commercially, modify freely</li>
+            <li>Built with Rust + Tauri — no hidden telemetry</li>
+          </ul>
+        </div>
+        <div class="oss-actions">
+          <a href="https://github.com/eact6/autocrop-pro" class="btn btn-ghost btn-lg">
+            <!-- Simple Icons: GitHub -->
+            <svg class="ui-icon ui-icon--fill" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            View source on GitHub
+          </a>
+          <a href="https://github.com/eact6/autocrop-pro/releases" class="btn btn-primary btn-lg">Download latest release</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Batch Simulator ── -->
+    <section class="section batch-section" id="batch">
+      <div class="container batch-grid">
+        <div class="batch-text reveal">
+          <span class="eyebrow">Live demo</span>
+          <h2>Watch Rust chew through a batch</h2>
+          <p>Hit simulate to see how the backend queues files, spawns FFmpeg for video, and reports progress in real time.</p>
+          <button id="btn-run-batch" class="btn btn-accent" aria-label="Simulate batch crop processing">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run batch simulation
+          </button>
+          <div class="batch-queue" aria-label="Simulated file queue">
+            <div class="batch-item" id="q-item-1">
+              <div class="batch-item-info">
+                <span class="batch-name">IMG_0412.JPG</span>
+                <span class="batch-meta">4.2 MB · Image</span>
+              </div>
+              <div class="batch-progress"><div class="batch-fill" id="fill-1"></div></div>
+              <span class="batch-pct" id="pct-1">0%</span>
+              <span class="batch-status" id="status-1">Queued</span>
+            </div>
+            <div class="batch-item" id="q-item-2">
+              <div class="batch-item-info">
+                <span class="batch-name">VLOG_JUNE_2026.MP4</span>
+                <span class="batch-meta">185 MB · Video</span>
+              </div>
+              <div class="batch-progress"><div class="batch-fill" id="fill-2"></div></div>
+              <span class="batch-pct" id="pct-2">0%</span>
+              <span class="batch-status" id="status-2">Queued</span>
+            </div>
+            <div class="batch-item" id="q-item-3">
+              <div class="batch-item-info">
+                <span class="batch-name">SCREENSHOT_02.PNG</span>
+                <span class="batch-meta">1.8 MB · Image</span>
+              </div>
+              <div class="batch-progress"><div class="batch-fill" id="fill-3"></div></div>
+              <span class="batch-pct" id="pct-3">0%</span>
+              <span class="batch-status" id="status-3">Queued</span>
+            </div>
+            <div class="batch-item" id="q-item-4">
+              <div class="batch-item-info">
+                <span class="batch-name">CLIP_REEL.MKV</span>
+                <span class="batch-meta">420 MB · Video</span>
+              </div>
+              <div class="batch-progress"><div class="batch-fill" id="fill-4"></div></div>
+              <span class="batch-pct" id="pct-4">0%</span>
+              <span class="batch-status" id="status-4">Queued</span>
+            </div>
+          </div>
+        </div>
+        <div class="terminal reveal reveal-delay-2">
+          <div class="terminal-bar">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <span>Rust backend logs</span>
+          </div>
+          <div class="terminal-body" id="console-output">
+            <div class="log-line log-info">&gt; Rust core ready. Awaiting trigger...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How It Works ── -->
+    <section class="section steps-section" id="how-it-works">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow">Workflow</span>
+          <h2>Three steps. No learning curve.</h2>
+        </div>
+        <div class="steps-track" id="steps-track">
+          <article class="step-card reveal" data-step="1">
+            <div class="step-num">1</div>
+            <h3>Drop your files</h3>
+            <p>Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or any supported format onto the app. Hundreds at once.</p>
+          </article>
+          <article class="step-card reveal reveal-delay-1" data-step="2">
+            <div class="step-num">2</div>
+            <h3>Preview &amp; tune</h3>
+            <p>Click any file to see the crop overlay. Adjust tolerance until borders snap perfectly — without touching pixel math.</p>
+          </article>
+          <article class="step-card reveal reveal-delay-2" data-step="3">
+            <div class="step-num">3</div>
+            <h3>Batch export</h3>
+            <p>Hit process. Cropped files land in <code>Documents/AutoCrop_Output/</code>. Originals stay untouched.</p>
+          </article>
+        </div>
+        <div class="steps-progress" aria-hidden="true">
+          <div class="steps-progress-fill" id="steps-progress-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Audience ── -->
+    <section class="section audience-section">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow">Who it's for</span>
+          <h2>Built for people who process media in bulk</h2>
+        </div>
+        <div class="audience-grid">
+          <div class="audience-card reveal">
+            <h3>YouTube &amp; video editors</h3>
+            <p>Standardize mixed-aspect footage, screen recordings, and old TV rips without opening a timeline for each clip.</p>
+          </div>
+          <div class="audience-card reveal reveal-delay-1">
+            <h3>Designers &amp; photographers</h3>
+            <p>Batch-strip scanner borders and black margins from product shots, mockups, and web assets.</p>
+          </div>
+          <div class="audience-card reveal reveal-delay-2">
+            <h3>Archivists &amp; hobbyists</h3>
+            <p>Digitizing VHS, DVD, or scanned collections? Remove thick analog borders from hundreds of files overnight.</p>
+          </div>
+          <div class="audience-card reveal reveal-delay-3">
+            <h3>Agencies with NDA clients</h3>
+            <p>Sensitive footage stays on-premise. No third-party uploads, no compliance headaches.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Comparison (AI-extractable) ── -->
+    <section class="section compare-tools-section" id="compare-tools">
+      <div class="container">
+        <div class="section-header reveal">
+          <span class="eyebrow">Compare options</span>
+          <h2>AutoCrop Pro vs manual editing, cloud tools, and FFmpeg</h2>
+          <p class="section-lead">Choosing how to strip letterboxes from a large media folder comes down to speed, privacy, and control.</p>
+        </div>
+        <div class="compare-table-wrap reveal">
+          <table class="compare-table">
+            <caption class="sr-only">Comparison of batch crop methods for removing black borders from images and videos</caption>
+            <thead>
+              <tr>
+                <th scope="col">Method</th>
+                <th scope="col">Batch speed</th>
+                <th scope="col">Privacy</th>
+                <th scope="col">Live preview</th>
+                <th scope="col">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">AutoCrop Pro</th>
+                <td>500+ files, parallel Rust</td>
+                <td>100% offline</td>
+                <td>Yes — tolerance slider</td>
+                <td>Free (MIT)</td>
+              </tr>
+              <tr>
+                <th scope="row">Premiere / Photoshop</th>
+                <td>~3 min per file</td>
+                <td>Local</td>
+                <td>Yes</td>
+                <td>Subscription</td>
+              </tr>
+              <tr>
+                <th scope="row">Online crop tools</th>
+                <td>Upload-limited</td>
+                <td>Cloud upload required</td>
+                <td>Varies</td>
+                <td>Freemium</td>
+              </tr>
+              <tr>
+                <th scope="row">FFmpeg cropdetect scripts</th>
+                <td>Fast if scripted</td>
+                <td>Local</td>
+                <td>No — CLI only</td>
+                <td>Free</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FAQ ── -->
+    <section class="section faq-section" id="faq">
+      <div class="container faq-container">
+        <div class="section-header reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Common questions</h2>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-0">
+              What is AutoCrop Pro?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-0">
+              <p>AutoCrop Pro is a free, open-source Windows desktop app that automatically detects and removes black borders, letterboxes, and pillarboxes from images and videos in batch. It runs 100% offline using a Rust parallel backend and FFmpeg cropdetect for video.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-1">
+              Does AutoCrop Pro need an internet connection?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-1">
+              <p>No. It's a native Tauri app that runs entirely on your PC. No files, telemetry, or tracking leaves your machine.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-2">
+              How does edge detection work?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-2">
+              <p>For images, the Rust backend builds per-row and per-column brightness histograms and sweeps inward from each edge. For videos, it runs FFmpeg <code>cropdetect</code> on 30 sample frames and parses the optimal crop region.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-3">
+              Is FFmpeg required?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-3">
+              <p>Only for video. Install FFmpeg and add it to your Windows PATH. Image cropping works immediately with no extra dependencies.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-4">
+              Where do cropped files go?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-4">
+              <p><code>%USERPROFILE%\Documents\AutoCrop_Output\</code> — named <code>{original}_cropped.{ext}</code>. Source files are never modified unless you enable Delete Originals.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-5">
+              What file formats does AutoCrop Pro support?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-5">
+              <p><strong>Images:</strong> JPG, PNG, WEBP, BMP, GIF, TIFF. <strong>Videos:</strong> MP4, MOV, MKV, AVI, WEBM, FLV. Video processing requires FFmpeg installed and on your Windows PATH.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-6">
+              How is AutoCrop Pro different from FFmpeg cropdetect scripts?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-6">
+              <p>AutoCrop Pro wraps FFmpeg cropdetect and Rust edge detection in a visual interface with live preview, batch queue, and parallel processing. You avoid writing one-off shell scripts and see exactly what will be cropped before processing hundreds of files.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-trigger" aria-expanded="false" aria-controls="faq-7">
+              macOS or Linux support?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-panel" id="faq-7">
+              <p>The Rust core is cross-platform. Current installers target Windows 10/11 (MSI + NSIS). macOS and Linux packages are planned.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Final CTA ── -->
+    <section class="section cta-section" id="download">
+      <div class="cta-bg" aria-hidden="true"></div>
+      <div class="container cta-content reveal">
+        <h2>Your folder of letterboxed clips<br>shouldn't own your afternoon</h2>
+        <p>Download AutoCrop Pro. Drop your files. Get back to actual creative work.</p>
+        <div class="cta-buttons">
+          <a href="https://github.com/eact6/autocrop-pro/releases" class="btn btn-primary btn-lg" id="btn-download-footer">Download — Free &amp; Open Source</a>
+          <a href="https://github.com/eact6/autocrop-pro" class="btn btn-ghost btn-lg" id="btn-github">Star on GitHub</a>
+        </div>
+        <p class="cta-note">MIT License · Open source · Windows 10/11 · WebView2 required</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <img src="logo-app.png" alt="AutoCrop Pro logo" class="logo-mark" width="32" height="32">
+          <span class="logo-wordmark">AutoCrop <span class="logo-pro">Pro</span></span>
+        </div>
+        <p>Open-source desktop app for batch-cropping black borders from images and videos. Local, fast, and free forever.</p>
+      </div>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <h4>Product</h4>
+        <a href="#simulator">Crop simulator</a>
+        <a href="#pain">The problem</a>
+        <a href="#features">Features</a>
+        <a href="#open-source">Open source</a>
+        <a href="#compare-tools">Compare</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <nav class="footer-nav" aria-label="Developer links">
+        <h4>Developer</h4>
+        <a href="https://github.com/eact6/autocrop-pro">GitHub</a>
+        <a href="https://github.com/eact6/autocrop-pro/releases">Releases</a>
+        <a href="https://opensource.org/licenses/MIT">MIT License</a>
+        <a href="llms.txt">llms.txt</a>
+        <a href="pricing.md">Pricing</a>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <span>© 2026 AutoCrop Pro · Updated June 9, 2026</span>
+      <span class="footer-badge">MIT · Open Source · Rust + Tauri</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

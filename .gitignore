@@ -35,6 +35,8 @@ dist-tauri
 
 # Stray scratch/output files
 *.txt
+!website/robots.txt
+!website/llms.txt
 *.exe
 
 # OS
@@ -48,3 +50,16 @@ AutoCrop_Pro.exe
 .env
 .env.*
 .env.local
+
+# Agent / IDE tooling (not part of the product)
+.agents
+skills-lock.json
+.cursor/
+
+# Website — internal docs & superseded assets (site uses logo-app.png)
+website/marketing-plan.md
+website/logo.svg
+website/logo-light.svg
+website/logo-icon.svg
+website/favicon.svg
+
