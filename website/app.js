@@ -42,6 +42,18 @@ document.addEventListener('DOMContentLoaded', () => {
     link.addEventListener('click', () => setNavOpen(false));
   });
 
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && navToggle?.getAttribute('aria-expanded') === 'true') {
+      setNavOpen(false);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && navToggle?.getAttribute('aria-expanded') === 'true') {
+      setNavOpen(false);
+    }
+  });
+
   // ── Scroll progress + header ──────────────────────────────────
   const scrollProgress = document.getElementById('scroll-progress');
   const header = document.getElementById('site-header');
