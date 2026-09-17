@@ -67,3 +67,11 @@ website/favicon.svg
 .worktrees/
 .worktree/
 
+# --- auto-added by cleanup (missing patterns) ---
+.next/
+.open-next/
+.turbo/
+.vercel/
+.venv/
+.opencode/
+coverage/

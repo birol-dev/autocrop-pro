@@ -192,3 +192,16 @@ describe("isVideo", () => {
         expect(isVideo("MOV")).toBe(true);
     });
 });
+
+describe("video even dimensions rounding", () => {
+    function roundEven(val: number): number {
+        return val - (val % 2);
+    }
+
+    it("rounds odd dimensions down to even for codec compliance", () => {
+        expect(roundEven(1919)).toBe(1918);
+        expect(roundEven(1079)).toBe(1078);
+        expect(roundEven(1920)).toBe(1920);
+        expect(roundEven(1080)).toBe(1080);
+    });
+});

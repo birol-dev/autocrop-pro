@@ -209,9 +209,11 @@ export default function App() {
         setProgressMsg("Detecting crop regions...");
 
         const itemsToProcess = [];
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             let crop = file.crop;
             if (!crop) {
+                setProgressMsg(`Detecting crop ${i + 1}/${files.length}…`);
                 try {
                     crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
                 } catch { crop = { w: 0, h: 0, x: 0, y: 0 }; }

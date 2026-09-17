@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { FolderOpen, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,8 +18,12 @@ export default function SettingsPanel() {
     const handleBrowse = async () => {
         setLoading(true);
         try {
-            const chosen = await invoke<string | null>("pick_save_folder");
-            if (chosen) {
+            const chosen = await openDialog({
+                directory: true,
+                multiple: false,
+                title: "Select output folder for AutoCrop Pro",
+            });
+            if (chosen && typeof chosen === "string") {
                 setSaving(true);
                 await invoke("set_save_location", { path: chosen });
                 setSaveLocation(chosen);

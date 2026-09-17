@@ -1,8 +1,4 @@
 import { ChevronRight } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProcessOptions } from "@/App";
 
 type SettingsSidebarProps = {
@@ -60,7 +56,7 @@ export default function SettingsSidebar({
                 {/* Detection Tolerance */}
                 <div style={sectionStyle}>
                     <div className="flex items-center justify-between mb-4">
-                        <Label
+                        <label
                             style={{
                                 fontFamily: "'Space Grotesk', sans-serif",
                                 fontWeight: 600,
@@ -69,7 +65,7 @@ export default function SettingsSidebar({
                             }}
                         >
                             Detection Tolerance
-                        </Label>
+                        </label>
                         <div
                             style={{
                                 background: "var(--purple)",
@@ -86,18 +82,24 @@ export default function SettingsSidebar({
                             {options.tolerance}%
                         </div>
                     </div>
-                    <Slider
-                        value={[options.tolerance]}
-                        onValueChange={(val) => setOptions(o => ({ ...o, tolerance: val[0] }))}
+                    <input
+                        type="range"
+                        min={0}
                         max={100}
                         step={1}
-                        className="[&_[role=slider]]:border-[3px] [&_[role=slider]]:border-[var(--border)] [&_[role=slider]]:shadow-[2px_2px_0px_var(--border)] [&_[role=slider]]:w-5 [&_[role=slider]]:h-5 [&_[role=slider]]:bg-[var(--teal)] [&>span]:bg-[var(--border)] [&>span]:h-[3px] [&_[data-orientation=horizontal]>span]:bg-[var(--teal)]"
+                        value={options.tolerance}
+                        onChange={(e) => setOptions(o => ({ ...o, tolerance: Number(e.target.value) }))}
+                        className="w-full h-2 rounded-lg cursor-pointer accent-[var(--teal)]"
+                        style={{
+                            border: "2px solid var(--border)",
+                            background: "var(--bg-card)",
+                        }}
                     />
                 </div>
 
                 {/* Output Format */}
                 <div style={sectionStyle}>
-                    <Label
+                    <label
                         className="block mb-3"
                         style={{
                             fontFamily: "'Space Grotesk', sans-serif",
@@ -107,48 +109,31 @@ export default function SettingsSidebar({
                         }}
                     >
                         Output Format
-                    </Label>
-                    <Select value={options.output_format} onValueChange={(val) => setOptions(o => ({ ...o, output_format: val }))}>
-                        <SelectTrigger
-                            className="h-11 text-sm font-semibold focus:ring-0 focus:ring-offset-0"
-                            style={{
-                                border: "var(--border-w) solid var(--border)",
-                                borderRadius: "12px",
-                                background: "var(--bg-card)",
-                                boxShadow: "var(--shadow)",
-                                color: "var(--text)",
-                                fontFamily: "'Space Grotesk', sans-serif",
-                            }}
-                        >
-                            <SelectValue placeholder="Format" />
-                        </SelectTrigger>
-                        <SelectContent
-                            style={{
-                                border: "var(--border-w) solid var(--border)",
-                                borderRadius: "14px",
-                                background: "var(--surface)",
-                                boxShadow: "var(--shadow-lg)",
-                                color: "var(--text)",
-                            }}
-                        >
-                            {["Same as source", "png", "jpg", "webp"].map(fmt => (
-                                <SelectItem
-                                    key={fmt}
-                                    value={fmt}
-                                    className="rounded-lg cursor-pointer font-medium"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                >
-                                    {fmt === "Same as source" ? "Same as source" : fmt === "png" ? "PNG (Lossless)" : fmt === "jpg" ? "JPEG (Compressed)" : "WebP"}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    </label>
+                    <select
+                        value={options.output_format}
+                        onChange={(e) => setOptions(o => ({ ...o, output_format: e.target.value }))}
+                        className="w-full h-11 px-3 text-sm font-semibold rounded-xl cursor-pointer"
+                        style={{
+                            border: "var(--border-w) solid var(--border)",
+                            background: "var(--bg-card)",
+                            boxShadow: "var(--shadow)",
+                            color: "var(--text)",
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            outline: "none",
+                        }}
+                    >
+                        <option value="Same as source">Same as source</option>
+                        <option value="png">PNG (Lossless)</option>
+                        <option value="jpg">JPEG (Compressed)</option>
+                        <option value="webp">WebP</option>
+                    </select>
                 </div>
 
                 {/* Toggles */}
                 <div style={sectionStyle} className="flex flex-col gap-4">
                     {/* Padding toggle */}
-                    <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => setOptions(o => ({ ...o, padding: !o.padding }))}>
                         <div>
                             <p
                                 style={{
@@ -165,17 +150,31 @@ export default function SettingsSidebar({
                                 Adds 10px buffer around crop edge
                             </p>
                         </div>
-                        <Switch
-                            checked={options.padding}
-                            onCheckedChange={(c) => setOptions(o => ({ ...o, padding: c }))}
-                            className="data-[state=checked]:bg-[var(--teal)] data-[state=unchecked]:bg-[var(--bg-card)] border-[3px] border-[var(--border)]"
-                        />
-                    </label>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={options.padding}
+                            className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out items-center"
+                            style={{
+                                border: "2px solid var(--border)",
+                                background: options.padding ? "var(--teal)" : "var(--bg-card)",
+                                boxShadow: options.padding ? "1px 1px 0 var(--border)" : "none",
+                            }}
+                        >
+                            <span
+                                className="inline-block h-5 w-5 rounded-full bg-white transition-transform duration-200 ease-in-out"
+                                style={{
+                                    border: "1.5px solid var(--border)",
+                                    transform: options.padding ? "translateX(22px)" : "translateX(2px)",
+                                }}
+                            />
+                        </button>
+                    </div>
 
                     <div style={{ height: "var(--border-w)", background: "var(--border)", borderRadius: "99px" }} />
 
                     {/* Delete originals toggle */}
-                    <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => setOptions(o => ({ ...o, delete_original: !o.delete_original }))}>
                         <div>
                             <p
                                 style={{
@@ -194,12 +193,26 @@ export default function SettingsSidebar({
                                 Removes source files after processing
                             </p>
                         </div>
-                        <Switch
-                            checked={options.delete_original}
-                            onCheckedChange={(c) => setOptions(o => ({ ...o, delete_original: c }))}
-                            className="data-[state=checked]:bg-[var(--pink)] data-[state=unchecked]:bg-[var(--bg-card)] border-[3px] border-[var(--border)]"
-                        />
-                    </label>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={options.delete_original}
+                            className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out items-center"
+                            style={{
+                                border: "2px solid var(--border)",
+                                background: options.delete_original ? "var(--pink)" : "var(--bg-card)",
+                                boxShadow: options.delete_original ? "1px 1px 0 var(--border)" : "none",
+                            }}
+                        >
+                            <span
+                                className="inline-block h-5 w-5 rounded-full bg-white transition-transform duration-200 ease-in-out"
+                                style={{
+                                    border: "1.5px solid var(--border)",
+                                    transform: options.delete_original ? "translateX(22px)" : "translateX(2px)",
+                                }}
+                            />
+                        </button>
+                    </div>
                 </div>
             </div>
 
