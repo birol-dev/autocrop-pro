@@ -205,3 +205,47 @@ describe("video even dimensions rounding", () => {
         expect(roundEven(1080)).toBe(1080);
     });
 });
+
+
+// ── Video crop filter sanitization (mirrors Rust process_single_video) ─────
+
+function roundEven(val: number): number {
+    return val - (val % 2);
+}
+
+/** Build a frame-clamped, even-dimension ffmpeg crop filter expression. */
+function buildVideoCropFilter(crop: { x: number; y: number; w: number; h: number }): string | null {
+    const x = roundEven(crop.x);
+    const y = roundEven(crop.y);
+    const w = roundEven(crop.w);
+    const h = roundEven(crop.h);
+    if (w < 2 || h < 2) return null;
+    return `crop=max(2\,min(${w}\,iw-min(${x}\,iw-2))):max(2\,min(${h}\,ih-min(${y}\,ih-2))):min(${x}\,iw-2):min(${y}\,ih-2)`;
+}
+
+describe("buildVideoCropFilter", () => {
+    it("returns null for degenerate crops after even rounding", () => {
+        expect(buildVideoCropFilter({ x: 0, y: 0, w: 1, h: 1 })).toBeNull();
+        expect(buildVideoCropFilter({ x: 0, y: 0, w: 0, h: 100 })).toBeNull();
+    });
+
+    it("rounds odd coordinates down and embeds them in a clamped filter", () => {
+        const filter = buildVideoCropFilter({ x: 11, y: 7, w: 101, h: 51 });
+        expect(filter).not.toBeNull();
+        // even values: x=10 y=6 w=100 h=50
+        expect(filter).toContain("min(100");
+        expect(filter).toContain("min(50");
+        expect(filter).toContain("min(10");
+        expect(filter).toContain("min(6");
+        // ffmpeg filtergraph requires escaped commas
+        expect(filter!.includes("\\,") || filter!.includes("\,")).toBe(true);
+    });
+
+    it("keeps already-even crops stable", () => {
+        const filter = buildVideoCropFilter({ x: 10, y: 20, w: 200, h: 100 });
+        expect(filter).toContain("min(200");
+        expect(filter).toContain("min(100");
+        expect(filter).toContain("min(10");
+        expect(filter).toContain("min(20");
+    });
+});

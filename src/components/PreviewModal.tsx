@@ -31,11 +31,13 @@ export default function PreviewModal({
 
     if (!previewFile) return null;
 
-    const hasCrop = detectedCrop && detectedCrop.w > 0 && detectedCrop.h > 0 && mediaDim && mediaDim.w > 0;
-    const cropLeft = hasCrop ? (detectedCrop.x / mediaDim.w) * 100 : 0;
-    const cropTop = hasCrop ? (detectedCrop.y / mediaDim.h) * 100 : 0;
-    const cropW = hasCrop ? (detectedCrop.w / mediaDim.w) * 100 : 0;
-    const cropH = hasCrop ? (detectedCrop.h / mediaDim.h) * 100 : 0;
+    const crop = detectedCrop;
+    const dim = mediaDim;
+    const hasCrop = !!(crop && crop.w > 0 && crop.h > 0 && dim && dim.w > 0 && dim.h > 0);
+    const cropLeft = hasCrop ? (crop!.x / dim!.w) * 100 : 0;
+    const cropTop = hasCrop ? (crop!.y / dim!.h) * 100 : 0;
+    const cropW = hasCrop ? (crop!.w / dim!.w) * 100 : 0;
+    const cropH = hasCrop ? (crop!.h / dim!.h) * 100 : 0;
 
     return (
         <div

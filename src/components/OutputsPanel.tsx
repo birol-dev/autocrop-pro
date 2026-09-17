@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { RefreshCw, FolderOpen, Play, Clock, Grid2X2 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,14 +19,17 @@ function timeAgo(unixSec: number): string {
 
 export default function OutputsPanel({ refreshTick }: OutputsPanelProps) {
     const [files, setFiles] = useState<OutputFile[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [lightbox, setLightbox] = useState<OutputFile | null>(null);
+    const hasLoadedRef = useRef(false);
 
     const load = useCallback(async () => {
-        setLoading(true);
+        // Full-page spinner only on the first load; later refreshes keep the grid visible.
+        if (!hasLoadedRef.current) setLoading(true);
         try {
             const result = await invoke<OutputFile[]>("list_output_files");
             setFiles(result);
+            hasLoadedRef.current = true;
         } catch (err) {
             toast.error(`Failed to load outputs: ${String(err)}`);
         } finally {

@@ -47,6 +47,7 @@ fn crop_regex() -> &'static regex::Regex {
 }
 
 const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov", "avi", "mkv", "webm", "flv", "wmv"];
+const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp", "bmp", "tiff", "tif", "gif"];
 
 pub fn get_extension(path: &Path) -> String {
     path.extension()
@@ -57,6 +58,10 @@ pub fn get_extension(path: &Path) -> String {
 
 pub fn is_video(ext: &str) -> bool {
     VIDEO_EXTENSIONS.contains(&ext)
+}
+
+pub fn is_image(ext: &str) -> bool {
+    IMAGE_EXTENSIONS.contains(&ext)
 }
 
 pub fn round_even(val: u32) -> u32 {
@@ -178,17 +183,31 @@ pub fn detect_image_crop(file_path: &str, tolerance: f32) -> Result<CropArea, St
 
 #[tauri::command]
 async fn detect_crop_areas(file_path: String, tolerance: f32) -> Result<CropArea, String> {
-    let ext = get_extension(Path::new(&file_path));
-
-    if is_video(&ext) {
-        detect_video_crop(&file_path, tolerance)
-    } else {
-        detect_image_crop(&file_path, tolerance)
-    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let ext = get_extension(Path::new(&file_path));
+        if is_video(&ext) {
+            detect_video_crop(&file_path, tolerance)
+        } else {
+            detect_image_crop(&file_path, tolerance)
+        }
+    })
+    .await
+    .map_err(|e| format!("Detection task failed: {e}"))?
 }
 
 #[tauri::command]
 async fn process_files(
+    app: tauri::AppHandle,
+    window: Window,
+    items: Vec<ProcessItem>,
+    options: ProcessOptions,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || process_files_inner(app, window, items, options))
+        .await
+        .map_err(|e| format!("Processing task failed: {e}"))?
+}
+
+fn process_files_inner(
     app: tauri::AppHandle,
     window: Window,
     items: Vec<ProcessItem>,
@@ -231,7 +250,7 @@ async fn process_files(
             collision += 1;
         }
 
-        // Apply optional padding, clamped to prevent overflow
+        // Apply optional padding (frame clamps happen in process_single_*)
         let mut crop = item.crop.clone();
         if options.padding {
             let pad: u32 = 10;
@@ -293,11 +312,19 @@ fn process_single_video(
 
     let crop_str;
     if crop.w > 0 && crop.h > 0 {
-        // Enforce even dimensions required by video codecs
-        let w = crop.w - (crop.w % 2);
-        let h = crop.h - (crop.h % 2);
-        crop_str = format!("crop={}:{}:{}:{}", w, h, crop.x, crop.y);
-        cmd.args(["-vf", &crop_str]);
+        // Even x/y/w/h for YUV420 codecs; skip tiny/degenerate crops.
+        let x = round_even(crop.x);
+        let y = round_even(crop.y);
+        let w = round_even(crop.w);
+        let h = round_even(crop.h);
+        if w >= 2 && h >= 2 {
+            // Clamp against input frame so padding cannot request out-of-bounds crops.
+            // Commas inside expressions must be escaped for the filtergraph parser.
+            crop_str = format!(
+                "crop=max(2\,min({w}\,iw-min({x}\,iw-2))):max(2\,min({h}\,ih-min({y}\,ih-2))):min({x}\,iw-2):min({y}\,ih-2)"
+            );
+            cmd.args(["-vf", &crop_str]);
+        }
     }
 
     cmd.args(["-c:a", "copy", out_path.to_str().unwrap_or("")]);
@@ -462,7 +489,13 @@ fn list_output_files(app: tauri::AppHandle) -> Result<Vec<OutputFile>, String> {
         }
 
         let ext = get_extension(&path);
-        let file_type = if is_video(&ext) { "video" } else { "image" }.to_string();
+        let file_type = if is_video(&ext) {
+            "video".to_string()
+        } else if is_image(&ext) {
+            "image".to_string()
+        } else {
+            continue;
+        };
 
         let name = path
             .file_name()
