@@ -321,7 +321,7 @@ fn process_single_video(
             // Clamp against input frame so padding cannot request out-of-bounds crops.
             // Commas inside expressions must be escaped for the filtergraph parser.
             crop_str = format!(
-                "crop=max(2\,min({w}\,iw-min({x}\,iw-2))):max(2\,min({h}\,ih-min({y}\,ih-2))):min({x}\,iw-2):min({y}\,ih-2)"
+                "crop=max(2\\,min({w}\\,iw-min({x}\\,iw-2))):max(2\\,min({h}\\,ih-min({y}\\,ih-2))):min({x}\\,iw-2):min({y}\\,ih-2)"
             );
             cmd.args(["-vf", &crop_str]);
         }
