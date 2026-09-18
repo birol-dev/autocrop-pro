@@ -174,7 +174,17 @@ export default function SettingsSidebar({
                     <div style={{ height: "var(--border-w)", background: "var(--border)", borderRadius: "99px" }} />
 
                     {/* Delete originals toggle */}
-                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => setOptions(o => ({ ...o, delete_original: !o.delete_original }))}>
+                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => {
+                        setOptions(o => {
+                            if (!o.delete_original) {
+                                const ok = window.confirm(
+                                    "Delete Originals permanently removes source files after a successful crop. Continue?",
+                                );
+                                if (!ok) return o;
+                            }
+                            return { ...o, delete_original: !o.delete_original };
+                        });
+                    }}>
                         <div>
                             <p
                                 style={{
