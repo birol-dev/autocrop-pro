@@ -149,6 +149,14 @@ export default function SettingsSidebar({
                                 checked={options.delete_original}
                                 onChange={(e) => {
                                     const delete_original = e.currentTarget.checked;
+                                    if (
+                                        delete_original &&
+                                        !window.confirm(
+                                            "Delete Originals permanently removes source files after a successful crop. Continue?",
+                                        )
+                                    ) {
+                                        return;
+                                    }
                                     setOptions((o) => ({ ...o, delete_original }));
                                 }}
                                 thumbIcon={<TrashIcon size={10} weight="bold" />}

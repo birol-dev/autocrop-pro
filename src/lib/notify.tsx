@@ -11,6 +11,16 @@ export function notifyError(message: string, title = "Something went wrong") {
     });
 }
 
+export function notifyWarning(message: string, title?: string) {
+    notifications.show({
+        color: "yellow",
+        title,
+        message,
+        icon: <WarningCircleIcon size={20} weight="fill" />,
+        autoClose: 6000,
+    });
+}
+
 export function notifySuccess(message: string, title?: string) {
     notifications.show({
         color: "teal",

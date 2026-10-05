@@ -21,7 +21,7 @@ import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { classifyFile } from "@/lib/media";
-import { notifyError } from "@/lib/notify";
+import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify";
 
 // Import modular components
 import SettingsSidebar from "@/components/SettingsSidebar";
@@ -109,6 +109,9 @@ export default function App() {
 
     const [isDragHovering, setIsDragHovering] = useState(false);
     const toleranceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Bumped whenever a detection is superseded (new request, preview closed) so stale results are dropped.
+    const detectGenRef = useRef(0);
+    const toleranceReadyRef = useRef(false);
 
     // ── File Management ─────────────────────────────────────────────────────
 
@@ -188,18 +191,30 @@ export default function App() {
     // ── Tolerance Change (Debounced) ────────────────────────────────────────
 
     useEffect(() => {
+        // Skip the initial mount — only react to user tolerance changes.
+        if (!toleranceReadyRef.current) {
+            toleranceReadyRef.current = true;
+            return;
+        }
         if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current);
         toleranceTimerRef.current = setTimeout(() => {
             setFiles(prev => prev.map(f => ({ ...f, crop: undefined })));
             if (previewFile) {
+                const gen = ++detectGenRef.current;
                 setDetectingCrop(true);
                 invoke<CropArea>("detect_crop_areas", { filePath: previewFile.path, tolerance: options.tolerance })
                     .then(crop => {
+                        if (gen !== detectGenRef.current) return;
                         setDetectedCrop(crop);
                         setFiles(prev => prev.map(f => f.id === previewFile.id ? { ...f, crop } : f));
                     })
-                    .catch(err => notifyError(`Detection failed: ${String(err)}`))
-                    .finally(() => setDetectingCrop(false));
+                    .catch(err => {
+                        if (gen !== detectGenRef.current) return;
+                        notifyError(`Detection failed: ${String(err)}`);
+                    })
+                    .finally(() => {
+                        if (gen === detectGenRef.current) setDetectingCrop(false);
+                    });
             }
         }, 300);
         return () => { if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current); };
@@ -213,18 +228,28 @@ export default function App() {
         setPreviewFile(file);
         setDetectedCrop(file.crop || null);
         if (!file.crop && file.path) {
+            const gen = ++detectGenRef.current;
             setDetectingCrop(true);
             try {
                 const crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
+                if (gen !== detectGenRef.current) return;
                 setDetectedCrop(crop);
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
             } catch (error) {
+                if (gen !== detectGenRef.current) return;
                 notifyError(`Detection failed: ${String(error)}`);
-            } finally { setDetectingCrop(false); }
+            } finally {
+                if (gen === detectGenRef.current) setDetectingCrop(false);
+            }
         }
     };
 
-    const closePreview = useCallback(() => { setPreviewFile(null); setDetectedCrop(null); }, []);
+    const closePreview = useCallback(() => {
+        detectGenRef.current += 1;
+        setPreviewFile(null);
+        setDetectedCrop(null);
+        setDetectingCrop(false);
+    }, []);
 
     // ── Process All ─────────────────────────────────────────────────────────
 
@@ -235,6 +260,7 @@ export default function App() {
         setProgressMsg("Detecting crop regions...");
 
         const itemsToProcess = [];
+        const failedDetect: string[] = [];
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             let crop = file.crop;
@@ -242,24 +268,35 @@ export default function App() {
                 setProgressMsg(`Detecting crop ${i + 1}/${files.length}…`);
                 try {
                     crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
-                } catch { crop = { w: 0, h: 0, x: 0, y: 0 }; }
+                } catch {
+                    crop = { w: 0, h: 0, x: 0, y: 0 };
+                    failedDetect.push(file.name);
+                }
             }
             itemsToProcess.push({ path: file.path, crop });
+        }
+
+        if (failedDetect.length > 0) {
+            notifyWarning(
+                `Crop detection failed for ${failedDetect.length} file${failedDetect.length === 1 ? "" : "s"}; exporting full frame instead.`,
+            );
         }
 
         setProgressMsg("Processing files...");
         let unlisten: (() => void) | undefined;
         try {
             unlisten = await listen<ProgressEventPayload>("crop-progress", (event) => {
-                const pct = (event.payload.current / event.payload.total) * 100;
+                const { current, total, message } = event.payload;
+                const pct = total > 0 ? (current / total) * 100 : 0;
                 setProgress(Math.min(pct, 100));
-                setProgressMsg(event.payload.message);
+                setProgressMsg(message);
             });
             await invoke("process_files", { items: itemsToProcess, options });
             setFiles([]);
             // Switch to outputs tab and refresh
             setTab("outputs");
             setOutputsRefreshTick(t => t + 1);
+            notifySuccess("Processing complete");
         } catch (error) {
             notifyError(`Processing failed: ${String(error)}`);
         } finally {

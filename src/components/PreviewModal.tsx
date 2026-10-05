@@ -40,7 +40,7 @@ function PreviewBody({ file, crop, detectingCrop }: PreviewBodyProps) {
     const [dim, setDim] = useState<Dim | null>(null);
     const [failed, setFailed] = useState(false);
 
-    const trimmed = crop && dim && dim.w > 0 ? Math.max(0, Math.round((1 - (crop.w * crop.h) / (dim.w * dim.h)) * 100)) : null;
+    const trimmed = crop && dim && dim.w > 0 && dim.h > 0 ? Math.max(0, Math.round((1 - (crop.w * crop.h) / (dim.w * dim.h)) * 100)) : null;
 
     return (
         <>
@@ -67,7 +67,7 @@ function PreviewBody({ file, crop, detectingCrop }: PreviewBodyProps) {
                             />
                         )}
 
-                        {crop && dim && dim.w > 0 && (
+                        {crop && dim && dim.w > 0 && dim.h > 0 && (
                             <div
                                 className={classes.crop}
                                 style={{
