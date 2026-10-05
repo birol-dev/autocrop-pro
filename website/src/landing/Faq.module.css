@@ -1,0 +1,37 @@
+.item {
+  border: 1px solid var(--mantine-color-default-border);
+  background-color: var(--mantine-color-body);
+  transition: border-color 150ms ease;
+
+  &[data-active] {
+    border-color: alpha(var(--mantine-color-brand-5), 0.5);
+    background-color: var(--mantine-color-body);
+  }
+}
+
+.control {
+  padding-block: 16px;
+}
+
+/* The control wraps a heading so FAQ questions stay in the document outline. */
+.q {
+  margin: 0;
+  font-size: var(--mantine-font-size-md);
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.chevron {
+  color: var(--mantine-color-dimmed);
+
+  &[data-rotate] {
+    transform: rotate(135deg);
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+.content {
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.7;
+}

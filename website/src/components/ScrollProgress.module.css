@@ -1,0 +1,14 @@
+.track {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 300;
+  height: 3px;
+  pointer-events: none;
+}
+
+.bar {
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--mantine-color-brand-5), var(--mantine-color-pink-5));
+}

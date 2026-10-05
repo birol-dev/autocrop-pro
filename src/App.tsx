@@ -1,12 +1,27 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { UploadCloud, Sun, Moon, Layers, FolderOpen, Settings } from "lucide-react";
+import {
+    ActionIcon,
+    AppShell,
+    Badge,
+    Center,
+    Group,
+    Image,
+    Progress,
+    SegmentedControl,
+    Stack,
+    Text,
+    Tooltip,
+    useComputedColorScheme,
+    useMantineColorScheme,
+} from "@mantine/core";
+import { FolderOpenIcon, GearSixIcon, MoonIcon, StackIcon, SunIcon } from "@phosphor-icons/react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
-import { Toaster, toast } from "sonner";
 import { classifyFile } from "@/lib/media";
+import { notifyError } from "@/lib/notify";
 
 // Import modular components
 import SettingsSidebar from "@/components/SettingsSidebar";
@@ -14,6 +29,9 @@ import PreviewModal from "@/components/PreviewModal";
 import FileQueue from "@/components/FileQueue";
 import OutputsPanel from "@/components/OutputsPanel";
 import SettingsPanel from "@/components/SettingsPanel";
+import Dropzone from "@/components/Dropzone";
+
+import classes from "./App.module.css";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -55,17 +73,20 @@ export type OutputFile = {
 
 type Tab = "queue" | "outputs" | "settings";
 
+const NAV_ITEMS: { value: Tab; label: string; icon: React.ReactNode }[] = [
+    { value: "queue", label: "Queue", icon: <StackIcon size={16} weight="bold" /> },
+    { value: "outputs", label: "Outputs", icon: <FolderOpenIcon size={16} weight="bold" /> },
+    { value: "settings", label: "Settings", icon: <GearSixIcon size={16} weight="bold" /> },
+];
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function App() {
-    const [dark, setDark] = useState(false);
     const [tab, setTab] = useState<Tab>("queue");
     const [outputsRefreshTick, setOutputsRefreshTick] = useState(0);
 
-    // Sync dark class
-    useEffect(() => {
-        document.documentElement.classList.toggle("dark", dark);
-    }, [dark]);
+    const { setColorScheme } = useMantineColorScheme();
+    const computedScheme = useComputedColorScheme("light", { getInitialValueInEffect: false });
 
     // Application state
     const [files, setFiles] = useState<MediaFile[]>([]);
@@ -113,6 +134,11 @@ export default function App() {
         setFiles(prev => prev.filter(f => f.id !== id));
     }, [isProcessing]);
 
+    const clearFiles = useCallback(() => {
+        if (isProcessing) return;
+        setFiles([]);
+    }, [isProcessing]);
+
     // ── Tauri Native Drag & Drop ────────────────────────────────────────────
 
     useEffect(() => {
@@ -155,7 +181,7 @@ export default function App() {
                 addFilesFromPaths(paths);
             }
         } catch (err) {
-            toast.error(`Failed to open file picker: ${String(err)}`);
+            notifyError(`Failed to open file picker: ${String(err)}`);
         }
     }, [isProcessing, addFilesFromPaths]);
 
@@ -172,7 +198,7 @@ export default function App() {
                         setDetectedCrop(crop);
                         setFiles(prev => prev.map(f => f.id === previewFile.id ? { ...f, crop } : f));
                     })
-                    .catch(err => toast.error(`Detection failed: ${String(err)}`))
+                    .catch(err => notifyError(`Detection failed: ${String(err)}`))
                     .finally(() => setDetectingCrop(false));
             }
         }, 300);
@@ -193,7 +219,7 @@ export default function App() {
                 setDetectedCrop(crop);
                 setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
             } catch (error) {
-                toast.error(`Detection failed: ${String(error)}`);
+                notifyError(`Detection failed: ${String(error)}`);
             } finally { setDetectingCrop(false); }
         }
     };
@@ -235,7 +261,7 @@ export default function App() {
             setTab("outputs");
             setOutputsRefreshTick(t => t + 1);
         } catch (error) {
-            toast.error(`Processing failed: ${String(error)}`);
+            notifyError(`Processing failed: ${String(error)}`);
         } finally {
             setIsProcessing(false);
             setProgress(0);
@@ -248,198 +274,106 @@ export default function App() {
 
     const hasFiles = files.length > 0;
 
-    const tabDef: { id: Tab; label: string; icon: React.ReactNode }[] = [
-        { id: "queue", label: "Queue", icon: <Layers size={15} /> },
-        { id: "outputs", label: "Outputs", icon: <FolderOpen size={15} /> },
-        { id: "settings", label: "Settings", icon: <Settings size={15} /> },
-    ];
-
     return (
-        <div
-            className="flex h-screen w-full overflow-hidden"
-            style={{ background: "var(--bg)", color: "var(--text)", fontFamily: "'Space Grotesk', sans-serif" }}
+        <AppShell
+            header={{ height: 60 }}
+            aside={{
+                width: 330,
+                breakpoint: 0,
+                // Export settings only matter while building the queue.
+                collapsed: { desktop: tab !== "queue", mobile: tab !== "queue" },
+            }}
+            padding="lg"
         >
-            <Toaster
-                theme={dark ? "dark" : "light"}
-                position="bottom-right"
-                toastOptions={{
-                    style: {
-                        background: "var(--surface)",
-                        border: "var(--border-w) solid var(--border)",
-                        color: "var(--text)",
-                        borderRadius: "16px",
-                        boxShadow: "var(--shadow)",
-                        fontFamily: "'Space Grotesk', sans-serif",
-                    }
-                }}
-            />
-
-            <main className="flex-1 flex flex-col relative h-full overflow-hidden">
-                {/* Header */}
-                <header
-                    data-tauri-drag-region
-                    className="h-[64px] flex items-center justify-between px-6 shrink-0 select-none"
-                    style={{ borderBottom: "var(--border-w) solid var(--border)", background: "var(--bg)" }}
-                >
-                    {/* Logo + Title */}
-                    <div className="flex items-center gap-3 pointer-events-none">
-                        <img
-                            src="/logo.png"
-                            alt="AutoCrop Pro"
-                            style={{
-                                width: "36px",
-                                height: "36px",
-                                borderRadius: "10px",
-                                border: "var(--border-w) solid var(--border)",
-                                boxShadow: "var(--shadow)",
-                                objectFit: "cover",
-                            }}
-                        />
-                        <h1
-                            style={{
-                                fontFamily: "'Nunito', sans-serif",
-                                fontWeight: 800,
-                                fontSize: "1.1rem",
-                                letterSpacing: "-0.01em",
-                                margin: 0,
-                            }}
-                        >
+            <AppShell.Header data-tauri-drag-region>
+                <div className={classes.header}>
+                    <Group gap="sm" wrap="nowrap" className={classes.brand}>
+                        <Image src="/logo.png" alt="" w={32} h={32} radius="md" />
+                        <Text fw={700} fz="lg" lts="-0.01em" visibleFrom="xs">
                             AutoCrop Pro
-                        </h1>
-                    </div>
+                        </Text>
+                    </Group>
 
-                    {/* Tab bar */}
-                    <div
-                        className="flex items-center gap-1 pointer-events-auto"
-                        style={{
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "14px",
-                            background: "var(--bg-card)",
-                            padding: "4px",
-                            boxShadow: "var(--shadow)",
-                        }}
-                    >
-                        {tabDef.map(t => (
-                            <button
-                                key={t.id}
-                                onClick={() => setTab(t.id)}
-                                className="flex items-center gap-2 transition-all duration-150"
-                                style={{
-                                    padding: "6px 14px",
-                                    borderRadius: "10px",
-                                    border: tab === t.id ? "var(--border-w) solid var(--border)" : "2px solid transparent",
-                                    background: tab === t.id ? "var(--text)" : "transparent",
-                                    color: tab === t.id ? "var(--bg)" : "var(--text-muted)",
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 700,
-                                    fontSize: "0.82rem",
-                                    cursor: "pointer",
-                                    boxShadow: tab === t.id ? "2px 2px 0 var(--border)" : "none",
-                                }}
+                    <SegmentedControl
+                        value={tab}
+                        onChange={(v) => setTab(v as Tab)}
+                        radius="md"
+                        size="md"
+                        data={NAV_ITEMS.map((t) => ({
+                            value: t.value,
+                            label: (
+                                <Center inline style={{ gap: 8 }}>
+                                    {t.icon}
+                                    <span>{t.label}</span>
+                                    {t.value === "queue" && hasFiles && (
+                                        <Badge size="sm" circle={files.length < 10} px={files.length < 10 ? 0 : 6}>
+                                            {files.length}
+                                        </Badge>
+                                    )}
+                                </Center>
+                            ),
+                        }))}
+                    />
+
+                    <Group justify="flex-end">
+                        <Tooltip label={computedScheme === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
+                            <ActionIcon
+                                variant="default"
+                                size={36}
+                                aria-label="Toggle colour theme"
+                                onClick={() => setColorScheme(computedScheme === "dark" ? "light" : "dark")}
                             >
-                                {t.icon}
-                                {t.label}
-                                {t.id === "queue" && hasFiles && (
-                                    <span
-                                        style={{
-                                            background: "var(--pink)",
-                                            color: "#fff",
-                                            borderRadius: "6px",
-                                            padding: "0 6px",
-                                            fontSize: "0.7rem",
-                                            fontWeight: 800,
-                                            border: "1px solid var(--border)",
-                                        }}
-                                    >
-                                        {files.length}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Theme toggle */}
-                    <button
-                        onClick={() => setDark(d => !d)}
-                        className="pointer-events-auto flex items-center justify-center w-9 h-9 transition-transform hover:scale-105 active:scale-95"
-                        style={{
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "10px",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow)",
-                            color: "var(--text)",
-                            cursor: "pointer",
-                        }}
-                        title="Toggle theme"
-                    >
-                        {dark ? <Sun size={16} /> : <Moon size={16} />}
-                    </button>
-                </header>
-
-                {/* Tab content */}
-                <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-5">
-                    {/* ── Queue Tab ─────────────────────────────────────────── */}
-                    {tab === "queue" && (
-                        <>
-                            {/* Dropzone */}
-                            <div
-                                onClick={handleDropzoneClick}
-                                className={`relative w-full flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}
-                                style={{
-                                    minHeight: hasFiles ? "96px" : "220px",
-                                    border: `var(--border-w) ${isDragHovering ? "solid" : "dashed"} var(--${isDragHovering ? "pink" : "border"})`,
-                                    borderRadius: "var(--radius-xl)",
-                                    background: isDragHovering ? "color-mix(in srgb, var(--pink) 8%, var(--bg))" : "var(--bg-card)",
-                                    boxShadow: isDragHovering ? "var(--shadow-lg)" : "none",
-                                    transform: isDragHovering ? "scale(1.01)" : "scale(1)",
-                                }}
-                            >
-                                <div className="flex flex-col items-center gap-3">
-                                    <div
-                                        className="flex items-center justify-center transition-all duration-300"
-                                        style={{
-                                            width: hasFiles ? "44px" : "60px",
-                                            height: hasFiles ? "44px" : "60px",
-                                            borderRadius: "14px",
-                                            border: "var(--border-w) solid var(--border)",
-                                            background: isDragHovering ? "var(--pink)" : "var(--surface)",
-                                            boxShadow: "var(--shadow)",
-                                            color: isDragHovering ? "#fff" : "var(--pink)",
-                                        }}
-                                    >
-                                        <UploadCloud size={hasFiles ? 20 : 28} strokeWidth={2} />
-                                    </div>
-                                    <div className="text-center">
-                                        <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: hasFiles ? "0.9rem" : "1.1rem", color: isDragHovering ? "var(--pink)" : "var(--text)", margin: 0 }}>
-                                            {isDragHovering ? "Release to add files" : "Drag & drop media files here"}
-                                        </p>
-                                        {!hasFiles && (
-                                            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>Or click to browse your files</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {hasFiles && (
-                                <FileQueue files={files} onPreviewFile={handlePreview} onRemoveFile={removeFile} />
-                            )}
-                        </>
-                    )}
-
-                    {/* ── Outputs Tab ───────────────────────────────────────── */}
-                    {tab === "outputs" && (
-                        <OutputsPanel refreshTick={outputsRefreshTick} />
-                    )}
-
-                    {/* ── Settings Tab ──────────────────────────────────────── */}
-                    {tab === "settings" && (
-                        <SettingsPanel />
-                    )}
+                                {computedScheme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
                 </div>
-            </main>
 
-            {/* Settings Sidebar — only show when not on settings tab */}
-            {tab !== "settings" && (
+                {isProcessing && (
+                    <Progress
+                        value={progress}
+                        size={3}
+                        radius={0}
+                        animated
+                        className={classes.globalProgress}
+                        aria-label="Processing progress"
+                    />
+                )}
+            </AppShell.Header>
+
+            <AppShell.Main className={classes.main}>
+                {/* ── Queue Tab ─────────────────────────────────────────── */}
+                {tab === "queue" && (
+                    <Stack gap="xl">
+                        <Dropzone
+                            isDragHovering={isDragHovering}
+                            isProcessing={isProcessing}
+                            compact={hasFiles}
+                            onBrowse={handleDropzoneClick}
+                        />
+
+                        {hasFiles && (
+                            <FileQueue
+                                files={files}
+                                disabled={isProcessing}
+                                onPreviewFile={handlePreview}
+                                onRemoveFile={removeFile}
+                                onClear={clearFiles}
+                            />
+                        )}
+                    </Stack>
+                )}
+
+                {/* ── Outputs Tab ───────────────────────────────────────── */}
+                {tab === "outputs" && (
+                    <OutputsPanel refreshTick={outputsRefreshTick} onGoToQueue={() => setTab("queue")} />
+                )}
+
+                {/* ── Settings Tab ──────────────────────────────────────── */}
+                {tab === "settings" && <SettingsPanel />}
+            </AppShell.Main>
+
+            <AppShell.Aside>
                 <SettingsSidebar
                     options={options}
                     setOptions={setOptions}
@@ -450,7 +384,7 @@ export default function App() {
                     filesCount={files.length}
                     onProcessAll={handleProcessAll}
                 />
-            )}
+            </AppShell.Aside>
 
             {/* Preview Modal */}
             <PreviewModal
@@ -459,6 +393,6 @@ export default function App() {
                 detectingCrop={detectingCrop}
                 detectedCrop={detectedCrop}
             />
-        </div>
+        </AppShell>
     );
 }

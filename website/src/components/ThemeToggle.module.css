@@ -1,0 +1,12 @@
+/* Dark mode shows the sun (click -> light); light mode shows the moon (click -> dark). */
+.sun {
+  @mixin light {
+    display: none;
+  }
+}
+
+.moon {
+  @mixin dark {
+    display: none;
+  }
+}

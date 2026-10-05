@@ -1,0 +1,45 @@
+.card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+
+  @mixin hover {
+    transform: translateY(-3px);
+    box-shadow: var(--mantine-shadow-md);
+  }
+}
+
+.number {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+  opacity: 0.7;
+}
+
+.quote {
+  margin: 0;
+  padding: 2px 0 2px var(--mantine-spacing-sm);
+  border-left: 3px solid var(--accent);
+  font-size: var(--mantine-font-size-sm);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  border: 1px solid var(--mantine-color-default-border);
+}
+
+.arrow {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}

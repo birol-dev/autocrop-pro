@@ -1,0 +1,112 @@
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-lg);
+  background: #000;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.after {
+  clip-path: inset(0 0 0 var(--pos));
+  /* Transparency grid: what is left once the bars are cropped away. */
+  background-color: light-dark(#f1f3f5, #26262b);
+  background-image:
+    linear-gradient(45deg, light-dark(#e3e6ea, #303036) 25%, transparent 25%),
+    linear-gradient(-45deg, light-dark(#e3e6ea, #303036) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, light-dark(#e3e6ea, #303036) 75%),
+    linear-gradient(-45deg, transparent 75%, light-dark(#e3e6ea, #303036) 75%);
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+}
+
+.picture {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.tagBefore,
+.tagAfter {
+  position: absolute;
+  bottom: 12px;
+  max-width: calc(50% - 20px);
+  box-shadow: var(--mantine-shadow-sm);
+  pointer-events: none;
+}
+
+.tagBefore {
+  left: 12px;
+}
+
+.tagAfter {
+  right: 12px;
+}
+
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  color: var(--mantine-color-black);
+  background: #fff;
+  box-shadow: var(--mantine-shadow-lg);
+  transform: translate(-50%, -50%);
+  transition: transform 150ms ease;
+}
+
+/* The native range input is the (invisible) drag + keyboard surface. */
+.range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.range:hover ~ .handle .knob,
+.range:active ~ .handle .knob {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.range:focus-visible ~ .handle .knob {
+  outline: 3px solid var(--mantine-primary-color-filled);
+  outline-offset: 3px;
+}
+
+@media (max-width: 36em) {
+  .tagBefore,
+  .tagAfter {
+    font-size: 10px;
+    bottom: 8px;
+  }
+}

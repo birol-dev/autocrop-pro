@@ -1,0 +1,12 @@
+.card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+
+  @mixin hover {
+    transform: translateY(-3px);
+    box-shadow: var(--mantine-shadow-md);
+    border-color: alpha(var(--mantine-primary-color-filled), 0.5);
+  }
+}

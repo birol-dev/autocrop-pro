@@ -1,0 +1,26 @@
+.section {
+  padding-block: clamp(64px, 9vw, 112px);
+}
+
+.section[data-tint] {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  border-block: 1px solid var(--mantine-color-default-border);
+}
+
+.eyebrow {
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.title {
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.accent {
+  background-image: linear-gradient(100deg, var(--mantine-color-brand-6), var(--mantine-color-pink-5));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: normal;
+}

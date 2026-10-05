@@ -1,188 +1,119 @@
-import { Play, Trash2, CheckCircle2, Video, Image as ImageIcon } from "lucide-react";
+import { ActionIcon, Badge, Button, Card, Group, Stack, Text, Tooltip } from "@mantine/core";
+import { CheckCircleIcon, FilmStripIcon, ImageSquareIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { MediaFile } from "@/App";
+import MediaThumb from "./MediaThumb";
+import PageHeader from "./PageHeader";
+
+import classes from "./MediaGrid.module.css";
 
 type FileQueueProps = {
     files: MediaFile[];
+    disabled: boolean;
     onPreviewFile: (file: MediaFile) => void;
     onRemoveFile: (id: string) => void;
+    onClear: () => void;
 };
 
-export default function FileQueue({ files, onPreviewFile, onRemoveFile }: FileQueueProps) {
-    return (
-        <div className="flex flex-col gap-4 pb-16">
-            {/* Queue header */}
-            <div className="flex items-center gap-3">
-                <h2
-                    style={{
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        color: "var(--text)",
-                        margin: 0,
-                    }}
-                >
-                    Queue
-                </h2>
-                <span
-                    style={{
-                        background: "var(--teal)",
-                        border: "2px solid var(--border)",
-                        borderRadius: "8px",
-                        padding: "1px 10px",
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 800,
-                        fontSize: "0.78rem",
-                        color: "#fff",
-                        boxShadow: "2px 2px 0px var(--border)",
-                    }}
-                >
-                    {files.length}
-                </span>
-            </div>
+function summarize(files: MediaFile[]): string {
+    const videos = files.filter((f) => f.type === "video").length;
+    const images = files.length - videos;
+    const parts: string[] = [];
+    if (images) parts.push(`${images} ${images === 1 ? "image" : "images"}`);
+    if (videos) parts.push(`${videos} ${videos === 1 ? "video" : "videos"}`);
+    return `${parts.join(" · ")} ready to process`;
+}
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {files.map((f, index) => (
-                    <div
-                        key={f.id}
-                        onClick={() => onPreviewFile(f)}
-                        className="group relative cursor-pointer overflow-hidden transition-all duration-200"
-                        style={{
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "var(--radius-lg)",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow)",
-                            animationDelay: `${index * 50}ms`,
-                        }}
-                        onMouseEnter={e => {
-                            (e.currentTarget as HTMLDivElement).style.transform = "translate(-2px, -2px)";
-                            (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lg)";
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLDivElement).style.transform = "translate(0, 0)";
-                            (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
-                        }}
+export default function FileQueue({ files, disabled, onPreviewFile, onRemoveFile, onClear }: FileQueueProps) {
+    return (
+        <Stack gap="md">
+            <PageHeader
+                title="Queue"
+                count={files.length}
+                description={summarize(files)}
+                actions={
+                    <Button
+                        variant="subtle"
+                        color="gray"
+                        size="xs"
+                        leftSection={<TrashIcon size={14} />}
+                        onClick={onClear}
+                        disabled={disabled}
                     >
-                        {/* Thumbnail */}
-                        <div
-                            className="w-full relative overflow-hidden flex items-center justify-center"
-                            style={{
-                                height: "120px",
-                                borderBottom: "var(--border-w) solid var(--border)",
-                                background: "var(--bg-card)",
+                        Clear all
+                    </Button>
+                }
+            />
+
+            <div className={classes.grid}>
+                {files.map((f) => {
+                    const TypeIcon = f.type === "video" ? FilmStripIcon : ImageSquareIcon;
+                    const ext = f.name.split(".").pop()?.toUpperCase();
+                    return (
+                        <Card
+                            key={f.id}
+                            withBorder
+                            padding={0}
+                            className={classes.card}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Preview ${f.name}`}
+                            onClick={() => onPreviewFile(f)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    onPreviewFile(f);
+                                }
                             }}
                         >
-                            {f.previewUrl ? (
-                                f.type === "video" ? (
-                                    <>
-                                        <video
-                                            src={`${f.previewUrl}#t=0.1`}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            preload="metadata"
-                                            onError={e => { (e.target as HTMLVideoElement).style.display = "none"; }}
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,0.3)" }}>
-                                            <div
-                                                className="flex items-center justify-center"
-                                                style={{
-                                                    width: "36px", height: "36px",
-                                                    borderRadius: "50%",
-                                                    background: "#fff",
-                                                    border: "2px solid var(--border)",
-                                                }}
-                                            >
-                                                <Play size={14} className="translate-x-0.5" fill="var(--text)" color="var(--text)" />
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <img
-                                        src={f.previewUrl}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        alt={f.name}
-                                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                    />
-                                )
-                            ) : (
-                                <div style={{ color: "var(--text-muted)" }}>
-                                    {f.type === "video" ? <Video size={32} strokeWidth={1.5} /> : <ImageIcon size={32} strokeWidth={1.5} />}
-                                </div>
-                            )}
+                            <Card.Section>
+                                <MediaThumb src={f.previewUrl} type={f.type} name={f.name}>
+                                    {f.crop && (
+                                        <Badge
+                                            className={classes.badge}
+                                            color="teal"
+                                            variant="filled"
+                                            size="sm"
+                                            leftSection={<CheckCircleIcon size={12} weight="fill" />}
+                                        >
+                                            Crop ready
+                                        </Badge>
+                                    )}
+                                    <Tooltip label="Remove from queue">
+                                        <ActionIcon
+                                            className={classes.action}
+                                            variant="filled"
+                                            color="dark"
+                                            size="md"
+                                            radius="xl"
+                                            disabled={disabled}
+                                            aria-label={`Remove ${f.name}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRemoveFile(f.id);
+                                            }}
+                                        >
+                                            <XIcon size={14} weight="bold" />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </MediaThumb>
+                            </Card.Section>
 
-                            {/* Remove button */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button
-                                    onClick={e => { e.stopPropagation(); onRemoveFile(f.id); }}
-                                    className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-                                    style={{
-                                        width: "28px", height: "28px",
-                                        borderRadius: "8px",
-                                        border: "2px solid var(--border)",
-                                        background: "var(--pink)",
-                                        color: "#fff",
-                                        boxShadow: "2px 2px 0px var(--border)",
-                                        cursor: "pointer",
-                                    }}
-                                    title="Remove from queue"
-                                >
-                                    <Trash2 size={13} />
-                                </button>
-                            </div>
-
-                            {/* Crop badge */}
-                            {f.crop && (
-                                <div
-                                    className="absolute bottom-2 left-2 flex items-center gap-1"
-                                    style={{
-                                        background: "var(--teal)",
-                                        border: "2px solid var(--border)",
-                                        borderRadius: "8px",
-                                        padding: "2px 8px",
-                                        fontSize: "0.65rem",
-                                        fontFamily: "'Nunito', sans-serif",
-                                        fontWeight: 800,
-                                        color: "#fff",
-                                        boxShadow: "2px 2px 0px var(--border)",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    <CheckCircle2 size={11} />
-                                    Crop Ready
-                                </div>
-                            )}
-                        </div>
-
-                        {/* File info */}
-                        <div className="p-3">
-                            <p
-                                className="truncate"
-                                style={{
-                                    fontFamily: "'Space Grotesk', sans-serif",
-                                    fontWeight: 600,
-                                    fontSize: "0.82rem",
-                                    color: "var(--text)",
-                                    margin: 0,
-                                }}
-                                title={f.name}
-                            >
-                                {f.name}
-                            </p>
-                            <p
-                                style={{
-                                    fontFamily: "'Space Grotesk', sans-serif",
-                                    fontSize: "0.72rem",
-                                    color: "var(--text-muted)",
-                                    margin: "3px 0 0 0",
-                                    textTransform: "capitalize",
-                                }}
-                            >
-                                {f.type}
-                            </p>
-                        </div>
-                    </div>
-                ))}
+                            <Stack gap={4} p="sm">
+                                <Text fw={600} size="sm" truncate title={f.name}>
+                                    {f.name}
+                                </Text>
+                                <Group gap={6} c="dimmed">
+                                    <TypeIcon size={14} />
+                                    <Text size="xs" c="dimmed" tt="capitalize">
+                                        {f.type}
+                                        {ext ? ` · ${ext}` : ""}
+                                    </Text>
+                                </Group>
+                            </Stack>
+                        </Card>
+                    );
+                })}
             </div>
-        </div>
+        </Stack>
     );
 }

@@ -1,0 +1,91 @@
+.viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--mantine-spacing-lg);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
+  background-image: radial-gradient(light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5)) 1px, transparent 1px);
+  background-size: 16px 16px;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    padding: var(--mantine-spacing-sm);
+    min-height: 220px;
+  }
+}
+
+.stage {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  box-shadow: var(--mantine-shadow-lg);
+  background: #000;
+}
+
+.media {
+  display: block;
+  max-width: 100%;
+  max-height: 58vh;
+  object-fit: contain;
+}
+
+/* The detected crop rectangle. The huge box-shadow dims everything outside it;
+   the stage's overflow:hidden keeps that dimming inside the image. */
+.crop {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid var(--mantine-primary-color-filled);
+  box-shadow:
+    0 0 0 9999px rgba(8, 8, 14, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  transition: all 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid var(--mantine-primary-color-filled);
+  border-radius: 2px;
+}
+.handle[data-pos='tl'] {
+  top: -6px;
+  left: -6px;
+}
+.handle[data-pos='tr'] {
+  top: -6px;
+  right: -6px;
+}
+.handle[data-pos='bl'] {
+  bottom: -6px;
+  left: -6px;
+}
+.handle[data-pos='br'] {
+  bottom: -6px;
+  right: -6px;
+}
+
+.tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--mantine-primary-color-filled);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.footer {
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.statValue {
+  font-family: var(--mantine-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+}

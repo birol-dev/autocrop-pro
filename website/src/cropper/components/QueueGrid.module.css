@@ -1,0 +1,51 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.card {
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--mantine-shadow-md);
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+  }
+}
+
+/* Corner action: fades in on hover/focus, always visible on touch screens. */
+.action {
+  position: absolute;
+  top: var(--mantine-spacing-xs);
+  right: var(--mantine-spacing-xs);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 150ms ease;
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.card:hover .action,
+.card:focus-within .action,
+.action:focus-visible {
+  opacity: 1;
+}
+
+.badge {
+  position: absolute;
+  left: var(--mantine-spacing-xs);
+  bottom: var(--mantine-spacing-xs);
+}

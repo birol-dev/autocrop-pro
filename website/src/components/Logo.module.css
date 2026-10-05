@@ -1,0 +1,17 @@
+.root {
+  display: inline-flex;
+  border-radius: var(--mantine-radius-md);
+}
+
+.mark {
+  display: block;
+  border-radius: 22%;
+}
+
+.word {
+  letter-spacing: -0.02em;
+}
+
+.pro {
+  color: var(--mantine-primary-color-filled);
+}

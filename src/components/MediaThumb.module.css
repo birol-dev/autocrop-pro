@@ -1,0 +1,62 @@
+.root {
+  position: relative;
+  overflow: hidden;
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.root:hover .media {
+  transform: scale(1.05);
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mantine-color-dimmed);
+}
+
+.playOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.1));
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+}
+
+.root:hover .playOverlay {
+  opacity: 1;
+}
+
+/* AspectRatio stretches every direct child to fill it, so overlay controls
+   (badges, action buttons) live inside this wrapper and position themselves. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.playButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #17171c;
+  box-shadow: var(--mantine-shadow-md);
+}

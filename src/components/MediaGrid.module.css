@@ -1,0 +1,48 @@
+/* Shared by the queue and the outputs gallery. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.card {
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-md);
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}
+
+/* Corner action that fades in when the card is hovered / focused. */
+.action {
+  position: absolute;
+  top: var(--mantine-spacing-xs);
+  right: var(--mantine-spacing-xs);
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 150ms ease;
+}
+
+.card:hover .action,
+.card:focus-within .action,
+.action:focus-visible {
+  opacity: 1;
+}
+
+.badge {
+  position: absolute;
+  left: var(--mantine-spacing-xs);
+  bottom: var(--mantine-spacing-xs);
+}

@@ -1,0 +1,136 @@
+.tilt {
+  perspective: 1600px;
+}
+
+.window {
+  overflow: hidden;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  pointer-events: none;
+  user-select: none;
+  background-color: var(--mantine-color-body);
+  box-shadow:
+    0 40px 80px -24px alpha(var(--mantine-color-brand-9), 0.35),
+    0 12px 28px -12px rgba(17, 17, 26, 0.25);
+
+  @media (min-width: $mantine-breakpoint-md) {
+    transform: rotateY(-7deg) rotateX(2deg);
+    transform-origin: 70% 50%;
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+}
+
+@media (min-width: 62em) and (hover: hover) {
+  .tilt:hover .window {
+    transform: rotateY(-2deg) rotateX(0.5deg);
+  }
+}
+
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+/* The tab strip only fits once the card is wide enough. */
+.nav {
+  display: none;
+
+  @media (min-width: $mantine-breakpoint-xs) {
+    display: block;
+  }
+}
+
+.logo {
+  border-radius: 22%;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+
+  @media (min-width: $mantine-breakpoint-xs) {
+    grid-template-columns: 1fr 188px;
+  }
+}
+
+.main {
+  padding: 12px;
+  min-width: 0;
+}
+
+.aside {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  border-left: 1px solid var(--mantine-color-default-border);
+  background-color: var(--mantine-color-body);
+
+  @media (min-width: $mantine-breakpoint-xs) {
+    display: flex;
+  }
+}
+
+.ready {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+}
+
+/* The detector "finding" the picture inside the letterbox, on a loop. */
+.crop {
+  position: absolute;
+  inset: 14% 0;
+  border: 2px solid var(--mantine-primary-color-filled);
+  box-shadow: 0 0 0 999px rgba(8, 8, 14, 0.58);
+  animation: detect 5s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+
+@keyframes detect {
+  0%,
+  8% {
+    inset: 0;
+    opacity: 0;
+  }
+  20% {
+    inset: 0;
+    opacity: 1;
+  }
+  48%,
+  88% {
+    inset: 14% 0;
+    opacity: 1;
+  }
+  100% {
+    inset: 14% 0;
+    opacity: 0;
+  }
+}

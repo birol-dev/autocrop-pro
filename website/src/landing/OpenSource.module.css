@@ -1,0 +1,38 @@
+.panel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(24px, 5vw, 56px);
+  background-image:
+    radial-gradient(
+      60% 120% at 100% 0%,
+      alpha(var(--mantine-color-brand-5), 0.14),
+      transparent 70%
+    );
+}
+
+.grid {
+  display: grid;
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: light-dark(var(--mantine-color-teal-7), var(--mantine-color-teal-4));
+}
+
+.actions {
+  width: 100%;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    max-width: 320px;
+    justify-self: end;
+  }
+}

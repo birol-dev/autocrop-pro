@@ -1,0 +1,33 @@
+.footer {
+  border-top: 1px solid var(--mantine-color-default-border);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--mantine-spacing-xl);
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 64px;
+  }
+}
+
+.link {
+  width: fit-content;
+
+  @mixin hover {
+    color: var(--mantine-primary-color-filled);
+    text-decoration: none;
+  }
+}
+
+.gh {
+  width: fit-content;
+  color: inherit;
+}

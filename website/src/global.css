@@ -1,0 +1,88 @@
+/* Global tweaks only — everything else is Mantine + CSS Modules. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-color: var(--mantine-color-body);
+}
+
+/* Marketing type needs a touch more contrast than dense app UI on dark. */
+:root[data-mantine-color-scheme='dark'] {
+  --mantine-color-text: #f0f0f5;
+  --mantine-color-dimmed: #a0a0ae;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 8px 14px;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-primary-color-filled);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+::selection {
+  background: alpha(var(--mantine-color-brand-5), 0.3);
+}
+
+/* Fade-up on scroll (progressive enhancement, no JS): content is visible by
+   default and only animates where scroll-driven animations are supported. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal] {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mantine-color-default-border);
+  border: 3px solid var(--mantine-color-body);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mantine-color-dimmed);
+}

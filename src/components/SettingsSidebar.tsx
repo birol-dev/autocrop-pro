@@ -1,4 +1,26 @@
-import { ChevronRight } from "lucide-react";
+import {
+    Badge,
+    Box,
+    Button,
+    Divider,
+    Group,
+    Paper,
+    Progress,
+    ScrollArea,
+    Select,
+    Slider,
+    Stack,
+    Switch,
+    Text,
+    Title,
+} from "@mantine/core";
+import {
+    ArrowsOutSimpleIcon,
+    CaretRightIcon,
+    FileImageIcon,
+    LightningIcon,
+    TrashIcon,
+} from "@phosphor-icons/react";
 import { ProcessOptions } from "@/App";
 
 type SettingsSidebarProps = {
@@ -12,13 +34,18 @@ type SettingsSidebarProps = {
     onProcessAll: () => void;
 };
 
-const sectionStyle: React.CSSProperties = {
-    border: "var(--border-w) solid var(--border)",
-    borderRadius: "var(--radius-lg)",
-    background: "var(--surface)",
-    boxShadow: "var(--shadow)",
-    padding: "16px",
-};
+const FORMATS = [
+    { value: "Same as source", label: "Same as source" },
+    { value: "png", label: "PNG (Lossless)" },
+    { value: "jpg", label: "JPEG (Compressed)" },
+    { value: "webp", label: "WebP" },
+];
+
+// Label on the left, switch on the right.
+const switchStyles = {
+    body: { justifyContent: "space-between", alignItems: "center", width: "100%" },
+    labelWrapper: { flex: 1 },
+} as const;
 
 export default function SettingsSidebar({
     options,
@@ -30,298 +57,157 @@ export default function SettingsSidebar({
     filesCount,
     onProcessAll,
 }: SettingsSidebarProps) {
+    const canProcess = hasFiles && !isProcessing;
+
     return (
-        <aside
-            className="flex flex-col shrink-0 z-10"
-            style={{
-                width: "300px",
-                borderLeft: "var(--border-w) solid var(--border)",
-                background: "var(--bg)",
-            }}
-        >
-            {/* Scrollable settings area */}
-            <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
-                <h2
-                    style={{
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 800,
-                        fontSize: "1.1rem",
-                        color: "var(--text)",
-                        margin: 0,
-                    }}
-                >
-                    Export Settings
-                </h2>
-
-                {/* Detection Tolerance */}
-                <div style={sectionStyle}>
-                    <div className="flex items-center justify-between mb-4">
-                        <label
-                            style={{
-                                fontFamily: "'Space Grotesk', sans-serif",
-                                fontWeight: 600,
-                                fontSize: "0.85rem",
-                                color: "var(--text)",
-                            }}
-                        >
-                            Detection Tolerance
-                        </label>
-                        <div
-                            style={{
-                                background: "var(--purple)",
-                                border: "var(--border-w) solid var(--border)",
-                                borderRadius: "8px",
-                                padding: "2px 10px",
-                                fontFamily: "'Nunito', sans-serif",
-                                fontWeight: 800,
-                                fontSize: "0.85rem",
-                                color: "#fff",
-                                boxShadow: "2px 2px 0px var(--border)",
-                            }}
-                        >
-                            {options.tolerance}%
-                        </div>
-                    </div>
-                    <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={options.tolerance}
-                        onChange={(e) => setOptions(o => ({ ...o, tolerance: Number(e.target.value) }))}
-                        className="w-full h-2 rounded-lg cursor-pointer accent-[var(--teal)]"
-                        style={{
-                            border: "2px solid var(--border)",
-                            background: "var(--bg-card)",
-                        }}
-                    />
-                </div>
-
-                {/* Output Format */}
-                <div style={sectionStyle}>
-                    <label
-                        className="block mb-3"
-                        style={{
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            color: "var(--text)",
-                        }}
-                    >
-                        Output Format
-                    </label>
-                    <select
-                        value={options.output_format}
-                        onChange={(e) => setOptions(o => ({ ...o, output_format: e.target.value }))}
-                        className="w-full h-11 px-3 text-sm font-semibold rounded-xl cursor-pointer"
-                        style={{
-                            border: "var(--border-w) solid var(--border)",
-                            background: "var(--bg-card)",
-                            boxShadow: "var(--shadow)",
-                            color: "var(--text)",
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            outline: "none",
-                        }}
-                    >
-                        <option value="Same as source">Same as source</option>
-                        <option value="png">PNG (Lossless)</option>
-                        <option value="jpg">JPEG (Compressed)</option>
-                        <option value="webp">WebP</option>
-                    </select>
-                </div>
-
-                {/* Toggles */}
-                <div style={sectionStyle} className="flex flex-col gap-4">
-                    {/* Padding toggle */}
-                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => setOptions(o => ({ ...o, padding: !o.padding }))}>
-                        <div>
-                            <p
-                                style={{
-                                    fontFamily: "'Space Grotesk', sans-serif",
-                                    fontWeight: 600,
-                                    fontSize: "0.85rem",
-                                    color: "var(--text)",
-                                    margin: 0,
-                                }}
-                            >
-                                Padding
-                            </p>
-                            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                                Adds 10px buffer around crop edge
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={options.padding}
-                            className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out items-center"
-                            style={{
-                                border: "2px solid var(--border)",
-                                background: options.padding ? "var(--teal)" : "var(--bg-card)",
-                                boxShadow: options.padding ? "1px 1px 0 var(--border)" : "none",
-                            }}
-                        >
-                            <span
-                                className="inline-block h-5 w-5 rounded-full bg-white transition-transform duration-200 ease-in-out"
-                                style={{
-                                    border: "1.5px solid var(--border)",
-                                    transform: options.padding ? "translateX(22px)" : "translateX(2px)",
-                                }}
-                            />
-                        </button>
+        <Stack gap={0} h="100%">
+            <ScrollArea flex={1} type="auto" offsetScrollbars>
+                <Stack gap="md" p="md">
+                    <div>
+                        <Title order={3}>Export settings</Title>
+                        <Text size="sm" c="dimmed" mt={2}>
+                            Applied to every file in the queue.
+                        </Text>
                     </div>
 
-                    <div style={{ height: "var(--border-w)", background: "var(--border)", borderRadius: "99px" }} />
-
-                    {/* Delete originals toggle */}
-                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => setOptions(o => ({ ...o, delete_original: !o.delete_original }))}>
-                        <div>
-                            <p
-                                style={{
-                                    fontFamily: "'Nunito', sans-serif",
-                                    fontWeight: 800,
-                                    fontSize: "0.85rem",
-                                    color: "var(--pink)",
-                                    margin: 0,
-                                    textDecoration: options.delete_original ? "underline" : "none",
-                                    textDecorationColor: "var(--pink)",
-                                }}
-                            >
-                                Delete Originals
-                            </p>
-                            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0 0" }}>
-                                Removes source files after processing
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={options.delete_original}
-                            className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out items-center"
-                            style={{
-                                border: "2px solid var(--border)",
-                                background: options.delete_original ? "var(--pink)" : "var(--bg-card)",
-                                boxShadow: options.delete_original ? "1px 1px 0 var(--border)" : "none",
-                            }}
-                        >
-                            <span
-                                className="inline-block h-5 w-5 rounded-full bg-white transition-transform duration-200 ease-in-out"
-                                style={{
-                                    border: "1.5px solid var(--border)",
-                                    transform: options.delete_original ? "translateX(22px)" : "translateX(2px)",
-                                }}
-                            />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Process Button area */}
-            <div
-                className="p-5 shrink-0"
-                style={{ borderTop: "var(--border-w) solid var(--border)" }}
-            >
-                <button
-                    disabled={!hasFiles || isProcessing}
-                    onClick={onProcessAll}
-                    className="relative w-full flex items-center justify-center gap-2 font-display transition-all duration-200 overflow-hidden"
-                    style={{
-                        height: "52px",
-                        border: "var(--border-w) solid var(--border)",
-                        borderRadius: "16px",
-                        background: !hasFiles || isProcessing ? "var(--bg-card)" : "var(--text)",
-                        color: !hasFiles || isProcessing ? "var(--text-muted)" : "var(--bg)",
-                        boxShadow: !hasFiles || isProcessing ? "none" : "var(--shadow-lg)",
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        cursor: !hasFiles || isProcessing ? "not-allowed" : "pointer",
-                        transform: "translateY(0)",
-                        transition: "transform 0.15s, box-shadow 0.15s",
-                    }}
-                    onMouseDown={e => {
-                        if (hasFiles && !isProcessing) {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "2px 2px 0px var(--border)";
-                        }
-                    }}
-                    onMouseUp={e => {
-                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow = hasFiles && !isProcessing ? "var(--shadow-lg)" : "none";
-                    }}
-                    onMouseLeave={e => {
-                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow = hasFiles && !isProcessing ? "var(--shadow-lg)" : "none";
-                    }}
-                >
-                    {/* Progress bar fill */}
-                    {isProcessing && (
-                        <div
-                            className="absolute left-0 top-0 h-full transition-all duration-300"
-                            style={{
-                                width: `${progress}%`,
-                                background: "var(--teal)",
-                                opacity: 0.25,
-                                borderRadius: "inherit",
-                            }}
+                    {/* Detection tolerance */}
+                    <Paper withBorder p="md">
+                        <Group justify="space-between" mb="xs">
+                            <Text fw={600} size="sm">
+                                Detection tolerance
+                            </Text>
+                            <Badge variant="light" size="lg">
+                                {options.tolerance}%
+                            </Badge>
+                        </Group>
+                        <Slider
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={options.tolerance}
+                            onChange={(tolerance) => setOptions((o) => ({ ...o, tolerance }))}
+                            label={null}
+                            marks={[
+                                { value: 0, label: "0" },
+                                { value: 50, label: "50" },
+                                { value: 100, label: "100" },
+                            ]}
+                            mb={36}
+                            thumbLabel="Detection tolerance"
                         />
-                    )}
+                        <Text size="xs" c="dimmed">
+                            Higher values also trim dark, noisy edges.
+                        </Text>
+                    </Paper>
 
-                    <div className="relative flex items-center gap-2">
-                        {isProcessing ? (
-                            <>
-                                <div
-                                    className="animate-spin"
-                                    style={{
-                                        width: "16px",
-                                        height: "16px",
-                                        borderRadius: "50%",
-                                        border: "3px solid var(--text-muted)",
-                                        borderTopColor: "var(--bg)",
-                                    }}
-                                />
-                                <span>{progressMsg || "Processing..."} {Math.round(progress)}%</span>
-                            </>
-                        ) : (
-                            <>
-                                <span>Process Files</span>
-                                {hasFiles && (
-                                    <span
-                                        style={{
-                                            background: "var(--pink)",
-                                            color: "#fff",
-                                            borderRadius: "8px",
-                                            padding: "0 8px",
-                                            fontSize: "0.75rem",
-                                            fontWeight: 800,
-                                            border: "2px solid var(--border)",
-                                        }}
-                                    >
-                                        {filesCount}
-                                    </span>
-                                )}
-                                <ChevronRight size={18} />
-                            </>
-                        )}
-                    </div>
-                </button>
+                    {/* Output format */}
+                    <Paper withBorder p="md">
+                        <Select
+                            label="Output format"
+                            data={FORMATS}
+                            value={options.output_format}
+                            onChange={(v) => v && setOptions((o) => ({ ...o, output_format: v }))}
+                            allowDeselect={false}
+                            leftSection={<FileImageIcon size={18} />}
+                            fw={600}
+                            styles={{ label: { fontWeight: 600, marginBottom: 8 } }}
+                        />
+                    </Paper>
+
+                    {/* Toggles */}
+                    <Paper withBorder p="md">
+                        <Stack gap="md">
+                            <Switch
+                                label="Padding"
+                                description="Adds a 10px buffer around the crop edge"
+                                labelPosition="left"
+                                styles={{ ...switchStyles, label: { fontWeight: 600 } }}
+                                checked={options.padding}
+                                onChange={(e) => {
+                                    const padding = e.currentTarget.checked;
+                                    setOptions((o) => ({ ...o, padding }));
+                                }}
+                                thumbIcon={<ArrowsOutSimpleIcon size={10} weight="bold" />}
+                            />
+
+                            <Divider />
+
+                            <Switch
+                                color="red"
+                                label="Delete originals"
+                                description={
+                                    options.delete_original ? (
+                                        <Text component="span" inherit c="red" fw={500}>
+                                            Source files are permanently deleted after processing
+                                        </Text>
+                                    ) : (
+                                        "Removes source files after processing"
+                                    )
+                                }
+                                labelPosition="left"
+                                styles={{ ...switchStyles, label: { fontWeight: 600 } }}
+                                checked={options.delete_original}
+                                onChange={(e) => {
+                                    const delete_original = e.currentTarget.checked;
+                                    setOptions((o) => ({ ...o, delete_original }));
+                                }}
+                                thumbIcon={<TrashIcon size={10} weight="bold" />}
+                            />
+                        </Stack>
+                    </Paper>
+                </Stack>
+            </ScrollArea>
+
+            {/* Process action */}
+            <Box
+                p="md"
+                style={{
+                    borderTop: "1px solid var(--mantine-color-default-border)",
+                    background: "var(--mantine-color-body)",
+                }}
+            >
+                {isProcessing && (
+                    <Stack gap={6} mb="sm">
+                        <Group justify="space-between" wrap="nowrap" gap="xs">
+                            <Text size="xs" c="dimmed" truncate>
+                                {progressMsg || "Processing…"}
+                            </Text>
+                            <Text size="xs" fw={600}>
+                                {Math.round(progress)}%
+                            </Text>
+                        </Group>
+                        <Progress value={progress} size="sm" animated radius="xl" />
+                    </Stack>
+                )}
+
+                <Button
+                    fullWidth
+                    size="lg"
+                    onClick={onProcessAll}
+                    disabled={!canProcess && !isProcessing}
+                    loading={isProcessing}
+                    leftSection={<LightningIcon size={20} weight="fill" />}
+                    rightSection={
+                        hasFiles ? (
+                            <Group gap={6} wrap="nowrap">
+                                <Badge variant="white" size="sm" circle={filesCount < 10}>
+                                    {filesCount}
+                                </Badge>
+                                <CaretRightIcon size={16} weight="bold" />
+                            </Group>
+                        ) : undefined
+                    }
+                    justify="space-between"
+                >
+                    {isProcessing ? "Processing" : "Process files"}
+                </Button>
 
                 {!hasFiles && !isProcessing && (
-                    <p
-                        className="text-center mt-3"
-                        style={{
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 800,
-                            fontSize: "0.7rem",
-                            color: "var(--pink)",
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                        }}
-                    >
-                        Drop files to begin
-                    </p>
+                    <Text size="xs" c="dimmed" ta="center" mt="xs">
+                        Add files to get started
+                    </Text>
                 )}
-            </div>
-        </aside>
+            </Box>
+        </Stack>
     );
 }

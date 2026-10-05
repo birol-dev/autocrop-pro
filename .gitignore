@@ -35,8 +35,8 @@ dist-tauri
 
 # Stray scratch/output files
 *.txt
-!website/robots.txt
-!website/llms.txt
+!website/public/robots.txt
+!website/public/llms.txt
 *.exe
 
 # OS

@@ -1,0 +1,62 @@
+.grid {
+  display: grid;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* The terminal stays dark in both colour schemes. */
+.terminal {
+  overflow: hidden;
+  background-color: #0e0e14;
+  border: 1px solid #26263a;
+  box-shadow: var(--mantine-shadow-lg);
+  color: #d4d4e0;
+}
+
+.termBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: #16161f;
+  border-bottom: 1px solid #26263a;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #3a3a4d;
+}
+
+.logBody {
+  padding: var(--mantine-spacing-md);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.line {
+  color: #9aa0b5;
+  word-break: break-word;
+}
+
+.line[data-tone='system'] {
+  color: #b79cff;
+}
+.line[data-tone='success'] {
+  color: #4ade80;
+}
+.line[data-tone='warning'] {
+  color: #fbbf24;
+}

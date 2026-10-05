@@ -1,12 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { RefreshCw, FolderOpen, Play, Clock, Grid2X2 } from "lucide-react";
-import { toast } from "sonner";
+import { ActionIcon, Button, Card, Group, Modal, Paper, Skeleton, Stack, Text, ThemeIcon, Tooltip } from "@mantine/core";
+import {
+    ArrowRightIcon,
+    ArrowsClockwiseIcon,
+    ClockIcon,
+    FolderOpenIcon,
+    ImagesIcon,
+} from "@phosphor-icons/react";
 import { OutputFile } from "@/App";
+import { notifyError } from "@/lib/notify";
+import MediaThumb from "./MediaThumb";
+import PageHeader from "./PageHeader";
+
+import classes from "./MediaGrid.module.css";
 
 type OutputsPanelProps = {
     /** Trigger a refresh whenever this counter increments (e.g. after processing) */
     refreshTick: number;
+    onGoToQueue: () => void;
 };
 
 function timeAgo(unixSec: number): string {
@@ -17,9 +29,10 @@ function timeAgo(unixSec: number): string {
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function OutputsPanel({ refreshTick }: OutputsPanelProps) {
+export default function OutputsPanel({ refreshTick, onGoToQueue }: OutputsPanelProps) {
     const [files, setFiles] = useState<OutputFile[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loaded, setLoaded] = useState(false);
     const [lightbox, setLightbox] = useState<OutputFile | null>(null);
 
     const load = useCallback(async () => {
@@ -28,20 +41,21 @@ export default function OutputsPanel({ refreshTick }: OutputsPanelProps) {
             const result = await invoke<OutputFile[]>("list_output_files");
             setFiles(result);
         } catch (err) {
-            toast.error(`Failed to load outputs: ${String(err)}`);
+            notifyError(`Failed to load outputs: ${String(err)}`);
         } finally {
             setLoading(false);
+            setLoaded(true);
         }
     }, []);
 
     // Load on mount and whenever refreshTick changes
     useEffect(() => { load(); }, [load, refreshTick]);
 
-    const handleDoubleClick = async (file: OutputFile) => {
+    const handleReveal = async (file: OutputFile) => {
         try {
             await invoke("reveal_in_explorer", { path: file.path });
         } catch (err) {
-            toast.error(`Could not open folder: ${String(err)}`);
+            notifyError(`Could not open folder: ${String(err)}`);
         }
     };
 
@@ -49,307 +63,190 @@ export default function OutputsPanel({ refreshTick }: OutputsPanelProps) {
         try {
             await invoke("open_output_folder");
         } catch (err) {
-            toast.error(`Could not open folder: ${String(err)}`);
+            notifyError(`Could not open folder: ${String(err)}`);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-16">
-                <div
-                    className="animate-spin"
-                    style={{
-                        width: "36px", height: "36px",
-                        borderRadius: "50%",
-                        border: "3px solid var(--border)",
-                        borderTopColor: "var(--teal)",
-                    }}
-                />
-                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Loading outputs…</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex flex-col gap-4 pb-16" style={{ minHeight: 0 }}>
-            {/* Toolbar */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <h2
-                        style={{
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 800,
-                            fontSize: "1rem",
-                            color: "var(--text)",
-                            margin: 0,
-                        }}
-                    >
-                        Outputs
-                    </h2>
-                    <span
-                        style={{
-                            background: "var(--teal)",
-                            border: "2px solid var(--border)",
-                            borderRadius: "8px",
-                            padding: "1px 10px",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 800,
-                            fontSize: "0.78rem",
-                            color: "#fff",
-                            boxShadow: "2px 2px 0px var(--border)",
-                        }}
-                    >
-                        {files.length}
-                    </span>
-                </div>
+        <Stack gap="md">
+            <PageHeader
+                title="Outputs"
+                count={files.length}
+                description="Newest first · click to preview, double-click to reveal in Explorer"
+                actions={
+                    <>
+                        <Button
+                            variant="default"
+                            leftSection={<FolderOpenIcon size={16} />}
+                            onClick={handleOpenFolder}
+                        >
+                            Open folder
+                        </Button>
+                        <Tooltip label="Refresh">
+                            <ActionIcon
+                                variant="default"
+                                size={36}
+                                onClick={load}
+                                loading={loading && loaded}
+                                aria-label="Refresh outputs"
+                            >
+                                <ArrowsClockwiseIcon size={16} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </>
+                }
+            />
 
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleOpenFolder}
-                        className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
-                        style={{
-                            padding: "6px 12px",
-                            border: "2px solid var(--border)",
-                            borderRadius: "10px",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow)",
-                            color: "var(--text)",
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            fontWeight: 600,
-                            fontSize: "0.78rem",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                        }}
-                    >
-                        <FolderOpen size={14} />
-                        Open Folder
-                    </button>
-                    <button
-                        onClick={load}
-                        className="flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-                        style={{
-                            width: "34px", height: "34px",
-                            border: "2px solid var(--border)",
-                            borderRadius: "10px",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow)",
-                            color: "var(--text)",
-                            cursor: "pointer",
-                        }}
-                        title="Refresh"
-                    >
-                        <RefreshCw size={14} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Empty state */}
-            {files.length === 0 && (
-                <div
-                    className="flex flex-col items-center justify-center gap-4"
-                    style={{
-                        flex: 1,
-                        minHeight: "200px",
-                        border: "2px dashed var(--border)",
-                        borderRadius: "20px",
-                        background: "var(--bg-card)",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: "56px", height: "56px",
-                            border: "2px solid var(--border)",
-                            borderRadius: "14px",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            color: "var(--text-muted)",
-                        }}
-                    >
-                        <Grid2X2 size={24} />
-                    </div>
-                    <div className="text-center">
-                        <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: "0.95rem", color: "var(--text)", margin: 0 }}>
-                            No outputs yet
-                        </p>
-                        <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                            Process some files to see them here
-                        </p>
-                    </div>
+            {/* First load: skeleton grid */}
+            {!loaded && (
+                <div className={classes.grid}>
+                    {Array.from({ length: 8 }, (_, i) => (
+                        <Skeleton key={i} height={170} radius="lg" />
+                    ))}
                 </div>
             )}
 
-            {/* Grid */}
-            {files.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {files.map((file) => (
-                        <div
-                            key={file.path}
-                            onClick={() => setLightbox(file)}
-                            onDoubleClick={() => handleDoubleClick(file)}
-                            className="group cursor-pointer overflow-hidden transition-all duration-200"
-                            style={{
-                                border: "var(--border-w) solid var(--border)",
-                                borderRadius: "16px",
-                                background: "var(--surface)",
-                                boxShadow: "var(--shadow)",
-                            }}
-                            onMouseEnter={e => {
-                                (e.currentTarget as HTMLDivElement).style.transform = "translate(-2px, -2px)";
-                                (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lg)";
-                            }}
-                            onMouseLeave={e => {
-                                (e.currentTarget as HTMLDivElement).style.transform = "translate(0,0)";
-                                (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow)";
-                            }}
-                            title="Click to preview · Double-click to reveal in Explorer"
+            {/* Empty state */}
+            {loaded && files.length === 0 && (
+                <Paper
+                    withBorder
+                    p={48}
+                    style={{ borderStyle: "dashed", borderWidth: 2 }}
+                >
+                    <Stack align="center" gap="sm">
+                        <ThemeIcon size={64} radius="xl" variant="light" color="gray">
+                            <ImagesIcon size={32} weight="duotone" />
+                        </ThemeIcon>
+                        <Text fw={650} size="lg" mt="xs">
+                            No outputs yet
+                        </Text>
+                        <Text c="dimmed" size="sm" ta="center" maw={360}>
+                            Cropped files land here once you process your queue.
+                        </Text>
+                        <Button
+                            variant="light"
+                            mt="xs"
+                            rightSection={<ArrowRightIcon size={16} weight="bold" />}
+                            onClick={onGoToQueue}
                         >
-                            {/* Thumbnail */}
-                            <div
-                                className="w-full relative overflow-hidden flex items-center justify-center"
-                                style={{ height: "110px", borderBottom: "var(--border-w) solid var(--border)", background: "var(--bg-card)" }}
-                            >
-                                {file.file_type === "video" ? (
-                                    <>
-                                        <video
-                                            src={`${convertFileSrc(file.path)}#t=0.1`}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            preload="metadata"
-                                            onError={e => { (e.target as HTMLVideoElement).style.display = "none"; }}
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,0.3)" }}>
-                                            <div className="flex items-center justify-center" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#fff", border: "2px solid var(--border)" }}>
-                                                <Play size={12} fill="var(--text)" color="var(--text)" className="translate-x-0.5" />
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <img
-                                        src={convertFileSrc(file.path)}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        alt={file.name}
-                                        loading="lazy"
-                                        onError={e => {
-                                            const t = e.target as HTMLImageElement;
-                                            t.style.display = "none";
-                                            const placeholder = t.parentElement;
-                                            if (placeholder) {
-                                                placeholder.style.display = "flex";
-                                                placeholder.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-                                            }
-                                        }}
-                                    />
-                                )}
-                            </div>
+                            Go to queue
+                        </Button>
+                    </Stack>
+                </Paper>
+            )}
 
-                            {/* Info */}
-                            <div style={{ padding: "8px 10px" }}>
-                                <p
-                                    className="truncate"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.75rem", color: "var(--text)", margin: 0 }}
-                                    title={file.name}
+            {/* Grid */}
+            {loaded && files.length > 0 && (
+                <div className={classes.grid}>
+                    {files.map((file) => (
+                        <Card
+                            key={file.path}
+                            withBorder
+                            padding={0}
+                            className={classes.card}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Preview ${file.name}`}
+                            title="Click to preview · Double-click to reveal in Explorer"
+                            onClick={() => setLightbox(file)}
+                            onDoubleClick={() => handleReveal(file)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setLightbox(file);
+                                }
+                            }}
+                        >
+                            <Card.Section>
+                                <MediaThumb
+                                    src={convertFileSrc(file.path)}
+                                    type={file.file_type === "video" ? "video" : "image"}
+                                    name={file.name}
+                                    ratio={4 / 3}
+                                    lazy
                                 >
+                                    <Tooltip label="Reveal in Explorer">
+                                        <ActionIcon
+                                            className={classes.action}
+                                            variant="filled"
+                                            color="dark"
+                                            size="md"
+                                            radius="xl"
+                                            aria-label={`Reveal ${file.name} in Explorer`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleReveal(file);
+                                            }}
+                                            onDoubleClick={(e) => e.stopPropagation()}
+                                        >
+                                            <FolderOpenIcon size={14} />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </MediaThumb>
+                            </Card.Section>
+
+                            <Stack gap={4} p="sm">
+                                <Text fw={600} size="sm" truncate title={file.name}>
                                     {file.name}
-                                </p>
-                                <div className="flex items-center gap-1" style={{ marginTop: "3px" }}>
-                                    <Clock size={10} style={{ color: "var(--text-muted)" }} />
-                                    <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: 0 }}>
+                                </Text>
+                                <Group gap={6} c="dimmed">
+                                    <ClockIcon size={14} />
+                                    <Text size="xs" c="dimmed">
                                         {timeAgo(file.modified_at)}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                                    </Text>
+                                </Group>
+                            </Stack>
+                        </Card>
                     ))}
                 </div>
             )}
 
             {/* Lightbox */}
-            {lightbox && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center"
-                    style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
-                    onClick={() => setLightbox(null)}
-                >
-                    <div
-                        className="relative max-w-5xl w-full mx-6 overflow-hidden"
-                        style={{
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "20px",
-                            background: "var(--surface)",
-                            boxShadow: "var(--shadow-lg)",
-                        }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div
-                            className="flex items-center justify-between px-5 py-3"
-                            style={{ borderBottom: "var(--border-w) solid var(--border)" }}
-                        >
-                            <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "var(--text)", margin: 0 }}>
-                                {lightbox.name}
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => handleDoubleClick(lightbox)}
-                                    className="flex items-center gap-2"
-                                    style={{
-                                        padding: "5px 12px",
-                                        border: "2px solid var(--border)",
-                                        borderRadius: "8px",
-                                        background: "var(--teal)",
-                                        color: "#fff",
-                                        fontFamily: "'Nunito', sans-serif",
-                                        fontWeight: 700,
-                                        fontSize: "0.78rem",
-                                        cursor: "pointer",
-                                        boxShadow: "2px 2px 0 var(--border)",
-                                    }}
-                                >
-                                    <FolderOpen size={13} />
-                                    Reveal in Explorer
-                                </button>
-                                <button
-                                    onClick={() => setLightbox(null)}
-                                    style={{
-                                        width: "30px", height: "30px",
-                                        border: "2px solid var(--border)",
-                                        borderRadius: "8px",
-                                        background: "var(--pink)",
-                                        color: "#fff",
-                                        fontFamily: "'Nunito', sans-serif",
-                                        fontWeight: 800,
-                                        fontSize: "1rem",
-                                        cursor: "pointer",
-                                        boxShadow: "2px 2px 0 var(--border)",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                    }}
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Media */}
-                        <div className="flex items-center justify-center p-4" style={{ background: "var(--bg-card)", maxHeight: "70vh" }}>
+            <Modal
+                opened={!!lightbox}
+                onClose={() => setLightbox(null)}
+                size="min(1040px, 94vw)"
+                overlayProps={{ backgroundOpacity: 0.65, blur: 4 }}
+                transitionProps={{ transition: "pop", duration: 150 }}
+                title={
+                    <Text fw={650} truncate maw={560}>
+                        {lightbox?.name}
+                    </Text>
+                }
+            >
+                {lightbox && (
+                    <Stack gap="md">
+                        <Group justify="center" bg="var(--mantine-color-default-hover)" p="md" style={{ borderRadius: "var(--mantine-radius-md)" }}>
                             {lightbox.file_type === "video" ? (
                                 <video
                                     src={convertFileSrc(lightbox.path)}
-                                    className="max-w-full max-h-[65vh] object-contain"
-                                    controls autoPlay muted
+                                    style={{ maxWidth: "100%", maxHeight: "62vh", borderRadius: 8 }}
+                                    controls
+                                    autoPlay
+                                    muted
                                 />
                             ) : (
                                 <img
                                     src={convertFileSrc(lightbox.path)}
-                                    className="max-w-full max-h-[65vh] object-contain"
                                     alt={lightbox.name}
+                                    style={{ maxWidth: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 8 }}
                                 />
                             )}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                        </Group>
+                        <Group justify="space-between">
+                            <Group gap={6} c="dimmed">
+                                <ClockIcon size={14} />
+                                <Text size="sm" c="dimmed">
+                                    {timeAgo(lightbox.modified_at)}
+                                </Text>
+                            </Group>
+                            <Button leftSection={<FolderOpenIcon size={16} />} onClick={() => handleReveal(lightbox)}>
+                                Reveal in Explorer
+                            </Button>
+                        </Group>
+                    </Stack>
+                )}
+            </Modal>
+        </Stack>
     );
 }

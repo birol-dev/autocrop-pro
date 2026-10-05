@@ -1,0 +1,35 @@
+.track {
+  position: relative;
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  height: 100%;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.num {
+  font-size: 1.25rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 6px var(--mantine-color-body);
+}
+
+.icon {
+  color: var(--mantine-primary-color-filled);
+  opacity: 0.85;
+}

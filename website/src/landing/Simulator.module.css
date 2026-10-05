@@ -1,0 +1,110 @@
+.grid {
+  display: grid;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+
+.window {
+  overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+}
+
+.body {
+  padding: var(--mantine-spacing-lg);
+}
+
+.canvas {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  background: #000;
+}
+
+/* The detected crop rectangle; the oversized shadow dims whatever is outside it. */
+.box {
+  --tone: var(--mantine-primary-color-filled);
+  position: absolute;
+  border: 2px solid var(--tone);
+  box-shadow: 0 0 0 9999px rgba(8, 8, 14, 0.62);
+  transition:
+    top 160ms ease,
+    left 160ms ease,
+    width 160ms ease,
+    height 160ms ease,
+    border-color 160ms ease;
+}
+
+.box[data-tone='ok'] {
+  --tone: var(--mantine-color-teal-5);
+}
+.box[data-tone='warn'] {
+  --tone: var(--mantine-color-yellow-5);
+}
+.box[data-tone='danger'] {
+  --tone: var(--mantine-color-red-5);
+}
+
+.handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid var(--tone);
+  border-radius: 2px;
+}
+.handle[data-pos='tl'] {
+  top: -6px;
+  left: -6px;
+}
+.handle[data-pos='tr'] {
+  top: -6px;
+  right: -6px;
+}
+.handle[data-pos='bl'] {
+  bottom: -6px;
+  left: -6px;
+}
+.handle[data-pos='br'] {
+  bottom: -6px;
+  right: -6px;
+}
+
+.dims {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--tone);
+  border-radius: var(--mantine-radius-sm);
+  font-variant-numeric: tabular-nums;
+}

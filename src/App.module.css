@@ -1,0 +1,25 @@
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 100%;
+  padding-inline: var(--mantine-spacing-md);
+  gap: var(--mantine-spacing-md);
+}
+
+/* `pointer-events: none` lets the Tauri drag region receive clicks on the logo area. */
+.brand {
+  pointer-events: none;
+  user-select: none;
+}
+
+.globalProgress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+}
+
+.main {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}

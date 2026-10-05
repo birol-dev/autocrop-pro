@@ -1,0 +1,16 @@
+.strip {
+  border-block: 1px solid var(--mantine-color-default-border);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.value {
+  font-size: clamp(2rem, 1.4rem + 2.2vw, 3rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  background-image: linear-gradient(135deg, var(--mantine-color-brand-6), var(--mantine-color-pink-5));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

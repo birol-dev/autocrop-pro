@@ -1,0 +1,43 @@
+.root {
+  border: 2px dashed var(--mantine-color-default-border);
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+
+  @mixin hover {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: light-dark(var(--mantine-primary-color-0), alpha(var(--mantine-primary-color-filled), 0.08));
+  }
+
+  &:focus-visible {
+    border-color: var(--mantine-primary-color-filled);
+    outline: 2px solid alpha(var(--mantine-primary-color-filled), 0.4);
+    outline-offset: 2px;
+  }
+
+  &[data-accept] {
+    border-style: solid;
+    border-color: var(--mantine-primary-color-filled);
+    background-color: light-dark(var(--mantine-primary-color-light), alpha(var(--mantine-primary-color-filled), 0.16));
+    box-shadow: 0 0 0 4px alpha(var(--mantine-primary-color-filled), 0.15);
+  }
+
+  &[data-disabled] {
+    opacity: 0.5;
+  }
+
+  &[data-compact] {
+    padding: var(--mantine-spacing-md);
+  }
+
+  &:not([data-compact]) {
+    padding: clamp(32px, 7vw, 72px) var(--mantine-spacing-md);
+    text-align: center;
+  }
+}
+
+.empty {
+  pointer-events: none;
+}

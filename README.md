@@ -81,10 +81,11 @@ The backend runs `ffmpeg -vf cropdetect` on 30 sample frames and parses the `cro
 |------------|-------------------------------------------------|
 | Framework  | Tauri v2.10.0                                   |
 | Backend    | Rust 1.77.2+, image 0.25, rayon, regex         |
-| Frontend   | React 18, TypeScript 5, Vite 5                  |
-| Styling    | TailwindCSS 3.4, shadcn/ui (Radix primitives)   |
+| Frontend   | React 19, TypeScript 5, Vite 8                  |
+| UI         | Mantine 9 (components, theming, notifications), Phosphor Icons, Inter |
 | Video      | FFmpeg (external CLI, must be on PATH)          |
 | Packaging  | MSI (WiX) + NSIS installers                     |
+| Website    | Separate Vite project in `website/`: React 19 + Mantine 9 + Phosphor, prerendered to static HTML (SSG), in-browser cropper with FFmpeg.wasm |
 
 ---
 
@@ -124,9 +125,12 @@ npm run tauri build
 |--------------------------------------|--------------------------------------------------|
 | `npm run tauri dev`                  | Development mode with hot-reload                 |
 | `npm run tauri build`                | Production build (creates installers)            |
-| `npm run dev`                        | Vite dev server only (frontend at localhost:1420)|
+| `npm run dev`                        | Vite dev server only (localhost:1420); in a plain browser a mocked Tauri backend + sample media is used so the UI can be explored without Rust |
 | `npm run build`                      | TypeScript check + Vite production build         |
-| `npm test`                           | Run frontend tests (Vitest)                      |
+| `npm test`                           | Run frontend + website engine tests (Vitest)     |
+| `npm run website`                    | Marketing site + in-browser cropper dev server (localhost:3000) |
+| `npm run website:build`              | Type-check, build and prerender the site to `website/dist` |
+| `npm run website:preview`            | Serve the built `website/dist` locally           |
 | `cd src-tauri && cargo test`         | Run Rust backend tests                           |
 | `cd src-tauri && cargo build --release` | Build Rust backend only                       |
 
@@ -137,6 +141,7 @@ npm run tauri build
 | Release executable      | `src-tauri/target/release/app.exe`                      |
 | MSI installer           | `src-tauri/target/release/bundle/msi/AutoCrop Pro_0.1.0_x64_en-US.msi` |
 | NSIS installer          | `src-tauri/target/release/bundle/nsis/AutoCrop Pro_0.1.0_x64-setup.exe` |
+| Website (static)        | `website/dist/` (deploy this folder; `dist-ssr` is a temporary build step) |
 
 ---
 
@@ -145,7 +150,7 @@ npm run tauri build
 1. **Add files** — Drag and drop media files onto the drop zone, or click to browse
 2. **Adjust settings** — Use the sidebar to set detection tolerance, output format, padding, and whether to delete originals
 3. **Preview** — Click any file to preview it with a visual crop overlay; the crop is detected automatically
-4. **Process** — Click "Process Files" to batch-crop everything; processed files go to `Documents/AutoCrop_Output/`
+4. **Process** — Click "Process files" to batch-crop everything; processed files go to `Documents/AutoCrop_Output/`
 5. **Browse output** — The gallery opens automatically after processing, showing all cropped files
 
 ### Supported File Types
@@ -164,25 +169,36 @@ autocrop-pro/
 +-- index.html                   # HTML shell
 +-- package.json                 # NPM dependencies and scripts
 +-- vite.config.ts               # Vite dev server config
-+-- tailwind.config.js           # Tailwind + shadcn/ui theme
++-- postcss.config.js            # postcss-preset-mantine (CSS Modules helpers)
 +-- tsconfig.json                # TypeScript config
-+-- components.json              # shadcn/ui registry config
++-- docs/ui-components.md        # UI component inventory (old -> Mantine mapping)
 |
 +-- src/                         # --- Frontend (React/TS) ---
-|   +-- main.tsx                 # React root mount
-|   +-- App.tsx                  # Main component
-|   +-- index.css                # Tailwind CSS + global styles
+|   +-- main.tsx                 # React root, MantineProvider, notifications
+|   +-- App.tsx                  # App shell: header nav, tabs, state + Tauri calls
+|   +-- theme.ts                 # Mantine theme (brand colour, fonts, radii, defaults)
+|   +-- index.css                # Global tweaks (scrollbars, reduced motion)
 |   +-- lib/
-|   |   +-- utils.ts             # cn() utility
 |   |   +-- media.ts             # classifyFile() + extension constants
+|   |   +-- notify.tsx           # notifyError / notifySuccess toast helpers
 |   |   +-- *.test.ts            # Vitest test files
 |   +-- test/
 |   |   +-- setup.ts             # Vitest setup (@testing-library/jest-dom)
-|   +-- components/
-|       +-- ui/                  # shadcn/ui primitives
-|           +-- button.tsx, card.tsx, checkbox.tsx
-|           +-- dialog.tsx, label.tsx, select.tsx
-|           +-- slider.tsx, switch.tsx, tooltip.tsx
+|   +-- dev/
+|   |   +-- mockTauri.ts         # Dev-only Tauri shim + sample media (browser preview)
+|   +-- components/              # Dropzone, FileQueue, OutputsPanel, PreviewModal,
+|                                #   SettingsPanel, SettingsSidebar, MediaThumb, PageHeader
+|
++-- website/                     # --- Marketing site + web cropper ---
+|   +-- vite.config.ts           # Multi-page build (/, /cropper/), reuses the root PostCSS config
+|   +-- index.html, cropper/     # HTML shells (prerender fills <!--app-html--> / <!--jsonld-->)
+|   +-- scripts/prerender.mjs    # SSG: renders both pages, writes sitemap.xml
+|   +-- public/                  # robots.txt, llms.txt, pricing.md, logos, sample SVGs, ffmpeg worker
+|   +-- src/
+|       +-- landing/             # Landing sections (Hero, Simulator, BatchDemo, Comparison, Faq, ...)
+|       +-- components/          # SiteHeader/Footer, ThemeToggle, Section, Scene, BackToTop, ...
+|       +-- content/             # Single source of truth for copy, FAQ, steps, JSON-LD
+|       +-- cropper/             # CropperPage + useCropper hook, components/, engine/ (plain JS)
 |
 +-- src-tauri/                   # --- Backend (Rust) ---
 |   +-- Cargo.toml               # Rust dependencies

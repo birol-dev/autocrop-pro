@@ -1,18 +1,67 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { FolderOpen, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
+import {
+    ActionIcon,
+    Badge,
+    Button,
+    Center,
+    Group,
+    Image,
+    Paper,
+    SegmentedControl,
+    Stack,
+    Text,
+    TextInput,
+    ThemeIcon,
+    Tooltip,
+    useMantineColorScheme,
+} from "@mantine/core";
+import {
+    ArrowCounterClockwiseIcon,
+    DesktopIcon,
+    FolderOpenIcon,
+    FolderSimpleIcon,
+    InfoIcon,
+    MoonIcon,
+    PaletteIcon,
+    SunIcon,
+} from "@phosphor-icons/react";
+import { version } from "../../package.json";
+import { notifyError, notifySuccess } from "@/lib/notify";
+import PageHeader from "./PageHeader";
+
+function Section({ icon, title, description, children }: { icon: ReactNode; title: string; description?: string; children: ReactNode }) {
+    return (
+        <Paper withBorder p="lg">
+            <Group gap="md" align={description ? "flex-start" : "center"} wrap="nowrap" mb="md">
+                <ThemeIcon size={40} radius="md" variant="light">
+                    {icon}
+                </ThemeIcon>
+                <div>
+                    <Text fw={650}>{title}</Text>
+                    {description && (
+                        <Text size="sm" c="dimmed">
+                            {description}
+                        </Text>
+                    )}
+                </div>
+            </Group>
+            {children}
+        </Paper>
+    );
+}
 
 export default function SettingsPanel() {
     const [saveLocation, setSaveLocation] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const { colorScheme, setColorScheme } = useMantineColorScheme();
 
     useEffect(() => {
         invoke<string>("get_save_location")
             .then(setSaveLocation)
-            .catch(err => toast.error(`Failed to load settings: ${String(err)}`));
+            .catch(err => notifyError(`Failed to load settings: ${String(err)}`));
     }, []);
 
     const handleBrowse = async () => {
@@ -27,10 +76,10 @@ export default function SettingsPanel() {
                 setSaving(true);
                 await invoke("set_save_location", { path: chosen });
                 setSaveLocation(chosen);
-                toast.success("Save location updated!");
+                notifySuccess("Save location updated");
             }
         } catch (err) {
-            toast.error(`Failed to set location: ${String(err)}`);
+            notifyError(`Failed to set location: ${String(err)}`);
         } finally {
             setLoading(false);
             setSaving(false);
@@ -43,183 +92,89 @@ export default function SettingsPanel() {
             await invoke("set_save_location", { path: "" });
             const def = await invoke<string>("get_save_location");
             setSaveLocation(def);
-            toast.success("Reset to default location");
+            notifySuccess("Reset to default location");
         } catch (err) {
-            toast.error(`Failed to reset: ${String(err)}`);
+            notifyError(`Failed to reset: ${String(err)}`);
         } finally {
             setSaving(false);
         }
     };
 
-    const cardStyle: React.CSSProperties = {
-        border: "var(--border-w) solid var(--border)",
-        borderRadius: "18px",
-        background: "var(--surface)",
-        boxShadow: "var(--shadow)",
-        padding: "20px",
-    };
-
-    const labelStyle: React.CSSProperties = {
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: 800,
-        fontSize: "0.9rem",
-        color: "var(--text)",
-        marginBottom: "4px",
-    };
-
-    const descStyle: React.CSSProperties = {
-        fontFamily: "'Space Grotesk', sans-serif",
-        fontSize: "0.78rem",
-        color: "var(--text-muted)",
-        marginBottom: "14px",
-        margin: "4px 0 14px 0",
-    };
-
     return (
-        <div className="flex flex-col gap-5 pb-16">
-            <h2
-                style={{
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 800,
-                    fontSize: "1rem",
-                    color: "var(--text)",
-                    margin: 0,
-                }}
+        <Stack gap="lg" maw={680} w="100%" mx="auto">
+            <PageHeader title="Settings" description="Where your files go and how the app looks." />
+
+            <Section
+                icon={<FolderSimpleIcon size={22} weight="duotone" />}
+                title="Output location"
+                description="Processed files are saved here. Defaults to Documents/AutoCrop_Output."
             >
-                Settings
-            </h2>
-
-            {/* Save Location */}
-            <div style={cardStyle}>
-                <p style={labelStyle}>Output Save Location</p>
-                <p style={descStyle}>Processed files will be saved here. Defaults to Documents/AutoCrop_Output.</p>
-
-                {/* Path display */}
-                <div
-                    className="flex items-center gap-2 mb-4"
-                    style={{
-                        border: "var(--border-w) solid var(--border)",
-                        borderRadius: "12px",
-                        padding: "10px 14px",
-                        background: "var(--bg-card)",
-                        boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.05)",
-                        minHeight: "44px",
-                    }}
-                >
-                    <FolderOpen size={15} style={{ color: "var(--teal)", flexShrink: 0 }} />
-                    <p
-                        className="truncate flex-1"
-                        style={{
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            fontSize: "0.8rem",
-                            color: saveLocation ? "var(--text)" : "var(--text-muted)",
-                            margin: 0,
-                        }}
-                        title={saveLocation}
-                    >
-                        {saveLocation || "Loading…"}
-                    </p>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex items-center gap-3">
-                    <button
+                <TextInput
+                    readOnly
+                    value={saveLocation}
+                    placeholder="Loading…"
+                    leftSection={<FolderOpenIcon size={16} />}
+                    aria-label="Output save location"
+                    title={saveLocation}
+                    mb="sm"
+                />
+                <Group gap="sm" wrap="nowrap">
+                    <Button
+                        flex={1}
+                        leftSection={<FolderOpenIcon size={16} />}
                         onClick={handleBrowse}
-                        disabled={loading || saving}
-                        className="flex items-center gap-2 flex-1 justify-center transition-all duration-150"
-                        style={{
-                            padding: "10px 16px",
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "12px",
-                            background: loading || saving ? "var(--bg-card)" : "var(--text)",
-                            color: loading || saving ? "var(--text-muted)" : "var(--bg)",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 800,
-                            fontSize: "0.85rem",
-                            cursor: loading || saving ? "not-allowed" : "pointer",
-                            boxShadow: loading || saving ? "none" : "var(--shadow)",
-                        }}
-                        onMouseDown={e => {
-                            if (!loading && !saving) {
-                                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)";
-                                (e.currentTarget as HTMLButtonElement).style.boxShadow = "1px 1px 0 var(--border)";
-                            }
-                        }}
-                        onMouseUp={e => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
-                        }}
-                    >
-                        <FolderOpen size={15} />
-                        {loading ? "Opening…" : "Browse…"}
-                    </button>
-
-                    <button
-                        onClick={handleReset}
+                        loading={loading}
                         disabled={saving}
-                        title="Reset to default"
-                        className="flex items-center justify-center transition-all duration-150"
-                        style={{
-                            width: "44px", height: "44px",
-                            border: "var(--border-w) solid var(--border)",
-                            borderRadius: "12px",
-                            background: "var(--surface)",
-                            color: saving ? "var(--text-muted)" : "var(--text)",
-                            cursor: saving ? "not-allowed" : "pointer",
-                            boxShadow: "var(--shadow)",
-                            flexShrink: 0,
-                        }}
-                        onMouseDown={e => {
-                            if (!saving) {
-                                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(2px)";
-                                (e.currentTarget as HTMLButtonElement).style.boxShadow = "1px 1px 0 var(--border)";
-                            }
-                        }}
-                        onMouseUp={e => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLButtonElement).style.transform = "";
-                            (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
-                        }}
                     >
-                        <RotateCcw size={15} />
-                    </button>
-                </div>
-            </div>
+                        Browse…
+                    </Button>
+                    <Tooltip label="Reset to default">
+                        <ActionIcon
+                            variant="default"
+                            size={36}
+                            onClick={handleReset}
+                            disabled={loading}
+                            loading={saving}
+                            aria-label="Reset to default location"
+                        >
+                            <ArrowCounterClockwiseIcon size={16} />
+                        </ActionIcon>
+                    </Tooltip>
+                </Group>
+            </Section>
 
-            {/* About */}
-            <div style={cardStyle}>
-                <p style={labelStyle}>About</p>
-                <p style={{ ...descStyle, marginBottom: 0 }}>
-                    AutoCrop Pro automatically detects and removes black / solid-colour borders from images and videos using histogram analysis and FFmpeg's cropdetect filter.
-                </p>
-                <div className="flex items-center gap-2 mt-4">
-                    <span
-                        style={{
-                            background: "var(--pink)",
-                            border: "2px solid var(--border)",
-                            borderRadius: "8px",
-                            padding: "2px 10px",
-                            fontFamily: "'Nunito', sans-serif",
-                            fontWeight: 800,
-                            fontSize: "0.75rem",
-                            color: "#fff",
-                            boxShadow: "2px 2px 0 var(--border)",
-                        }}
-                    >
-                        v0.1.4
-                    </span>
-                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                        AutoCrop Pro
-                    </span>
-                </div>
-            </div>
-        </div>
+            <Section
+                icon={<PaletteIcon size={22} weight="duotone" />}
+                title="Appearance"
+                description="Choose a theme, or follow your system setting."
+            >
+                <SegmentedControl
+                    fullWidth
+                    value={colorScheme}
+                    onChange={(v) => setColorScheme(v as "light" | "dark" | "auto")}
+                    data={[
+                        { value: "light", label: <Center inline style={{ gap: 8 }}><SunIcon size={16} /> Light</Center> },
+                        { value: "dark", label: <Center inline style={{ gap: 8 }}><MoonIcon size={16} /> Dark</Center> },
+                        { value: "auto", label: <Center inline style={{ gap: 8 }}><DesktopIcon size={16} /> System</Center> },
+                    ]}
+                />
+            </Section>
+
+            <Section icon={<InfoIcon size={22} weight="duotone" />} title="About">
+                <Group wrap="nowrap" align="flex-start" gap="md">
+                    <Image src="/logo.png" alt="" w={56} h={56} radius="md" />
+                    <Stack gap={6}>
+                        <Group gap="xs">
+                            <Text fw={650}>AutoCrop Pro</Text>
+                            <Badge variant="light">v{version}</Badge>
+                        </Group>
+                        <Text size="sm" c="dimmed">
+                            Automatically detects and removes black or solid-colour borders from images and videos
+                            using histogram analysis and FFmpeg's cropdetect filter.
+                        </Text>
+                    </Stack>
+                </Group>
+            </Section>
+        </Stack>
     );
 }
