@@ -1,39 +1,23 @@
-.tilt {
-  perspective: 1600px;
-}
-
 .window {
+  min-width: 720px;
+  max-width: 1120px;
   overflow: hidden;
-  width: 100%;
-  max-width: 640px;
-  margin-inline: auto;
+  border-radius: var(--radius-card);
+  font-size: 12px;
+  line-height: 1.35;
   pointer-events: none;
   user-select: none;
-  background-color: var(--mantine-color-body);
-  box-shadow:
-    0 40px 80px -24px alpha(var(--mantine-color-brand-9), 0.35),
-    0 12px 28px -12px rgba(17, 17, 26, 0.25);
-
-  @media (min-width: $mantine-breakpoint-md) {
-    transform: rotateY(-7deg) rotateX(2deg);
-    transform-origin: 70% 50%;
-    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-}
-
-@media (min-width: 62em) and (hover: hover) {
-  .tilt:hover .window {
-    transform: rotateY(-2deg) rotateX(0.5deg);
-  }
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
 }
 
 .chrome {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--mantine-color-default-border);
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .dots {
@@ -46,72 +30,154 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  background: var(--hairline);
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--mantine-color-default-border);
-}
-
-/* The tab strip only fits once the card is wide enough. */
 .nav {
-  display: none;
-
-  @media (min-width: $mantine-breakpoint-xs) {
-    display: block;
-  }
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
 }
 
-.logo {
-  border-radius: 22%;
+.navItem {
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.navItem[data-active] {
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .body {
   display: grid;
-  grid-template-columns: 1fr;
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-
-  @media (min-width: $mantine-breakpoint-xs) {
-    grid-template-columns: 1fr 188px;
-  }
+  grid-template-columns: minmax(0, 1fr) 240px;
 }
 
 .main {
-  padding: 12px;
-  min-width: 0;
+  padding: 16px;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+.grey {
+  margin: 0;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
+}
+
+.thumb {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 6px;
+  border-radius: var(--radius-inner);
+  background: #000;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.name {
+  margin: 0;
 }
 
 .aside {
-  display: none;
+  display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 12px;
-  border-left: 1px solid var(--mantine-color-default-border);
-  background-color: var(--mantine-color-body);
-
-  @media (min-width: $mantine-breakpoint-xs) {
-    display: flex;
-  }
+  gap: 20px;
+  padding: 16px;
+  background: var(--panel);
 }
 
-.ready {
+.aside .heading {
+  margin-bottom: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.track {
+  display: block;
+  height: 2px;
+  background: var(--hairline);
+}
+
+.fill {
+  display: block;
+  width: 20%;
+  height: 100%;
+  background: var(--ink);
+}
+
+.select {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.toggle {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.toggle::after {
+  content: '';
   position: absolute;
-  left: 6px;
-  bottom: 6px;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.process {
+  margin-top: auto;
+  padding: 10px;
+  border-radius: 999px;
+  text-align: center;
+  background: var(--ink);
+  color: var(--surface);
 }
 
 /* The detector "finding" the picture inside the letterbox, on a loop. */
 .crop {
   position: absolute;
-  inset: 14% 0;
-  border: 2px solid var(--mantine-primary-color-filled);
-  box-shadow: 0 0 0 999px rgba(8, 8, 14, 0.58);
-  animation: detect 5s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+  inset: 12% 0;
+  border: 1px solid #fff;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55);
+  animation: detect 5s var(--ease-out) infinite;
 }
 
 @keyframes detect {
@@ -126,11 +192,11 @@
   }
   48%,
   88% {
-    inset: 14% 0;
+    inset: 12% 0;
     opacity: 1;
   }
   100% {
-    inset: 14% 0;
+    inset: 12% 0;
     opacity: 0;
   }
 }

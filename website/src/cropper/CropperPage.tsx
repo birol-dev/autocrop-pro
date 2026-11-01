@@ -1,8 +1,9 @@
-import { Alert, Anchor, Badge, Container, Paper, Stack, Tabs, Text, Title } from "@mantine/core";
-import { QueueIcon, ShieldCheckIcon, TrayArrowDownIcon } from "@phosphor-icons/react";
+import { Tabs, Title } from "@mantine/core";
+import { ShieldCheckIcon } from "@phosphor-icons/react";
 
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import { Fade, Margins } from "../components/Section";
 import { RELEASES_URL } from "../content/site";
 import CropDropzone from "./components/CropDropzone";
 import PreviewModal from "./components/PreviewModal";
@@ -24,74 +25,56 @@ export default function CropperPage() {
       </a>
       <SiteHeader current="cropper" />
 
-      <main id="main" className={classes.page}>
-        <Container size={1280} px={{ base: "md", sm: "xl" }}>
-          <Stack gap="sm" mb="lg" className={classes.intro}>
-            <Badge variant="light" size="lg" tt="uppercase" w="fit-content" className={classes.eyebrow}>
-              Free · runs in your browser
-            </Badge>
+      <main id="main" className={classes.page} data-tone="white">
+        <Margins className={classes.inner}>
+          <div className={classes.intro}>
             <Title order={1} className={classes.title}>
-              Crop letterboxes in your browser
+              Crop letterboxes <Fade>in your browser</Fade>
             </Title>
-            <Text c="dimmed" fz="lg" maw={640} lh={1.55}>
+            <p className={classes.lead}>
               Drop a few images or videos, preview the detected crop, and download clean files. No upload, no account.
-            </Text>
-          </Stack>
-
-          <Alert
-            variant="light"
-            color="teal"
-            radius="lg"
-            icon={<ShieldCheckIcon size={22} weight="duotone" />}
-            title="Files never leave this tab."
-            mb="lg"
-            role="note"
-          >
-            Detection runs on your device. Video uses a local FFmpeg engine loaded once from a CDN — nothing is uploaded
-            to AutoCrop Pro.{" "}
-            <Text span inherit>
-              Need 500 files, TIFF, or huge videos?{" "}
-              <Anchor href={RELEASES_URL} inherit fw={600}>
-                Download the Windows app
-              </Anchor>
-            </Text>
-          </Alert>
+            </p>
+            <p className={classes.note} role="note">
+              <ShieldCheckIcon size={15} className={classes.noteIcon} aria-hidden="true" />
+              <span>
+                <strong className={classes.noteLead}>Files never leave this tab.</strong> Detection runs on your device.
+                Video uses a local FFmpeg engine loaded once from a CDN — nothing is uploaded to AutoCrop Pro. Need 500
+                files, TIFF, or huge videos?{" "}
+                <a className={classes.noteLink} href={RELEASES_URL}>
+                  Download the Windows app
+                </a>
+              </span>
+            </p>
+          </div>
 
           <div className={classes.layout}>
-            <Paper withBorder radius="xl" className={classes.main}>
+            <div className={classes.main}>
               <Tabs
                 value={c.tab}
                 onChange={(v) => v && c.setTab(v as CropperTab)}
                 keepMounted={false}
                 aria-label="Cropper views"
+                variant="pills"
               >
-                <Tabs.List px="md" pt={4}>
+                <Tabs.List className={classes.list}>
                   <Tabs.Tab
                     value="queue"
-                    leftSection={<QueueIcon size={16} weight="bold" />}
-                    rightSection={
-                      <Badge size="sm" variant="light" circle={c.items.length < 10}>
-                        {c.items.length}
-                      </Badge>
-                    }
+                    className={classes.tab}
+                    rightSection={<span className={classes.count}>{c.items.length}</span>}
                   >
                     Queue
                   </Tabs.Tab>
                   <Tabs.Tab
                     value="results"
-                    leftSection={<TrayArrowDownIcon size={16} weight="bold" />}
-                    rightSection={
-                      <Badge size="sm" variant="light" color={resultCount ? "teal" : "gray"} circle={resultCount < 10}>
-                        {resultCount}
-                      </Badge>
-                    }
+                    className={classes.tab}
+                    rightSection={<span className={classes.count}>{resultCount}</span>}
                   >
                     Results
                   </Tabs.Tab>
                 </Tabs.List>
 
-                <Tabs.Panel value="queue" p={{ base: "md", sm: "lg" }}>
-                  <Stack gap="md">
+                <Tabs.Panel value="queue" className={classes.panel}>
+                  <div className={classes.stack}>
                     <CropDropzone
                       compact={c.items.length > 0}
                       disabled={c.processing}
@@ -108,10 +91,10 @@ export default function CropperPage() {
                         onClear={c.clearAll}
                       />
                     )}
-                  </Stack>
+                  </div>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="results" p={{ base: "md", sm: "lg" }}>
+                <Tabs.Panel value="results" className={classes.panel}>
                   <ResultsList
                     items={c.items}
                     options={c.options}
@@ -121,9 +104,9 @@ export default function CropperPage() {
                   />
                 </Tabs.Panel>
               </Tabs>
-            </Paper>
+            </div>
 
-            <Paper withBorder radius="xl" className={classes.aside}>
+            <aside className={classes.aside}>
               <SettingsPanel
                 options={c.options}
                 fileCount={c.items.length}
@@ -134,9 +117,9 @@ export default function CropperPage() {
                 onFormat={c.setOutputFormat}
                 onProcess={c.processAll}
               />
-            </Paper>
+            </aside>
           </div>
-        </Container>
+        </Margins>
       </main>
 
       <PreviewModal item={previewItem} options={c.options} onClose={() => c.setPreviewId(null)} />

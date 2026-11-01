@@ -1,58 +1,56 @@
-import { Card, SimpleGrid, Text, ThemeIcon, Title, type MantineColor } from "@mantine/core";
-import { CameraIcon, FilmReelIcon, LockKeyIcon, VideoCameraIcon } from "@phosphor-icons/react";
-import type { Icon } from "@phosphor-icons/react";
+import { Title } from "@mantine/core";
 
-import { Section, SectionHeader } from "../components/Section";
+import { MEDIA } from "../content/media";
+import { Chapter, Fade, Margins, MediaFrame } from "../components/Section";
+import classes from "./Audience.module.css";
 
-type Persona = { icon: Icon; color: MantineColor; title: string; body: string };
-
-const PERSONAS: Persona[] = [
+const PERSONAS = [
   {
-    icon: VideoCameraIcon,
-    color: "pink",
     title: "YouTube & video editors",
     body: "Standardize mixed-aspect footage, screen recordings, and old TV rips without opening a timeline for each clip.",
+    media: MEDIA.harbor,
   },
   {
-    icon: CameraIcon,
-    color: "brand",
     title: "Designers & photographers",
     body: "Batch-strip scanner borders and black margins from product shots, mockups, and web assets.",
+    media: MEDIA.rooftops,
   },
   {
-    icon: FilmReelIcon,
-    color: "orange",
     title: "Archivists & hobbyists",
     body: "Digitizing VHS, DVD, or scanned collections? Remove thick analog borders from hundreds of files overnight.",
+    media: MEDIA.orchard,
   },
   {
-    icon: LockKeyIcon,
-    color: "teal",
     title: "Agencies with NDA clients",
     body: "Sensitive footage stays on your machine. Crop in the tab or in the Windows app — no third-party cloud uploads.",
+    media: MEDIA.lake,
   },
 ];
 
 export default function Audience() {
   return (
-    <Section labelledBy="audience-title" tint>
-      <SectionHeader eyebrow="Who it's for" titleId="audience-title" title="Built for people who process media in bulk" />
+    <Chapter tone="paper" index="06" label="Who it's for" labelledBy="audience-title" flushTop bleed>
+      <Margins>
+        <header className={classes.header}>
+          <Title order={2} id="audience-title" className={classes.title}>
+            Built for people who process media <Fade>in bulk</Fade>
+          </Title>
+        </header>
+      </Margins>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-        {PERSONAS.map((p) => (
-          <Card key={p.title} padding="xl" bg="transparent" data-reveal>
-            <ThemeIcon size={44} radius="xl" variant="light" color={p.color} mb="md">
-              <p.icon size={24} weight="duotone" />
-            </ThemeIcon>
-            <Title order={3} mb={6}>
-              {p.title}
-            </Title>
-            <Text c="dimmed" size="sm" lh={1.65}>
-              {p.body}
-            </Text>
-          </Card>
-        ))}
-      </SimpleGrid>
-    </Section>
+      <div className={classes.scroller} tabIndex={0} role="region" aria-label="Who AutoCrop Pro is for" data-reveal>
+        <ul className={classes.track}>
+          {PERSONAS.map((p) => (
+            <li key={p.title} className={classes.item}>
+              <MediaFrame src={p.media.src} alt={p.media.alt} ratio="3 / 4" />
+              <div className={classes.text}>
+                <Title order={3}>{p.title}</Title>
+                <p className={classes.body}>{p.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Chapter>
   );
 }

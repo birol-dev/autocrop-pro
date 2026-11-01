@@ -1,0 +1,21 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  transition: opacity 180ms var(--ease-out);
+
+  @media (hover: hover) {
+    &:hover {
+      opacity: 0.82;
+    }
+  }
+}

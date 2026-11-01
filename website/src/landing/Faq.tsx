@@ -1,33 +1,45 @@
-import { Accordion } from "@mantine/core";
+import { Accordion, Title } from "@mantine/core";
 import { PlusIcon } from "@phosphor-icons/react";
 
 import { FAQS } from "../content/faq";
-import { Section, SectionHeader } from "../components/Section";
+import { Chapter, Fade } from "../components/Section";
 import classes from "./Faq.module.css";
 
 export default function Faq() {
   return (
-    <Section id="faq" labelledBy="faq-title" size={860}>
-      <SectionHeader eyebrow="FAQ" titleId="faq-title" title="Common questions" />
+    <Chapter tone="white" id="faq" index="11" label="FAQ" labelledBy="faq-title">
+      <div className={classes.grid}>
+        <div className={classes.head}>
+          <Title order={2} id="faq-title">
+            Common <Fade>questions</Fade>
+          </Title>
+        </div>
 
-      <div data-reveal>
-        <Accordion
-          variant="separated"
-          radius="lg"
-          defaultValue="faq-0"
-          chevron={<PlusIcon size={18} weight="bold" />}
-          classNames={{ item: classes.item, control: classes.control, chevron: classes.chevron, content: classes.content }}
-        >
-          {FAQS.map((f, i) => (
-            <Accordion.Item key={f.q} value={`faq-${i}`}>
-              <Accordion.Control>
-                <h3 className={classes.q}>{f.q}</h3>
-              </Accordion.Control>
-              <Accordion.Panel>{f.a}</Accordion.Panel>
-            </Accordion.Item>
-          ))}
-        </Accordion>
+        <div data-reveal>
+          <Accordion
+            variant="default"
+            defaultValue="faq-0"
+            chevron={<PlusIcon size={22} weight="light" />}
+            chevronSize={28}
+            classNames={{
+              item: classes.item,
+              control: classes.control,
+              label: classes.label,
+              chevron: classes.chevron,
+              content: classes.content,
+            }}
+          >
+            {FAQS.map((faq, i) => (
+              <Accordion.Item key={faq.q} value={`faq-${i}`}>
+                <Accordion.Control>
+                  <h3 className={classes.q}>{faq.q}</h3>
+                </Accordion.Control>
+                <Accordion.Panel>{faq.a}</Accordion.Panel>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        </div>
       </div>
-    </Section>
+    </Chapter>
   );
 }

@@ -6,8 +6,8 @@ export const RELEASES_URL = `${GITHUB_URL}/releases`;
 export const VERSION = pkg.version;
 
 /** Bump when page copy changes: shown on the page, in the footer and in sitemap.xml. */
-export const LAST_UPDATED_ISO = "2026-10-06";
-export const LAST_UPDATED = "October 6, 2026";
+export const LAST_UPDATED_ISO = "2026-11-01";
+export const LAST_UPDATED = "November 1, 2026";
 
 export const NAV_LINKS = [
   { label: "Features", href: "/#features" },

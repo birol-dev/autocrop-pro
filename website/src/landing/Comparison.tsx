@@ -1,6 +1,6 @@
-import { Badge, Table } from "@mantine/core";
+import { Title } from "@mantine/core";
 
-import { Section, SectionHeader } from "../components/Section";
+import { Chapter, Fade } from "../components/Section";
 import classes from "./Comparison.module.css";
 
 type Row = { method: string; speed: string; privacy: string; preview: string; cost: string; ours?: boolean };
@@ -35,50 +35,53 @@ const ROWS: Row[] = [
 
 export default function Comparison() {
   return (
-    <Section id="compare-tools" tint labelledBy="compare-tools-title" size={1100}>
-      <SectionHeader
-        eyebrow="Compare options"
-        titleId="compare-tools-title"
-        title="AutoCrop Pro vs manual editing, cloud tools, and FFmpeg"
-        lead="Choosing how to strip letterboxes from a large media folder comes down to speed, privacy, and control."
-      />
-
-      <div className={classes.wrap} data-reveal>
-        <Table.ScrollContainer minWidth={760} type="native">
-          <Table verticalSpacing="md" horizontalSpacing="lg" className={classes.table}>
-            <Table.Caption className={classes.caption}>
-              Comparison of batch crop methods for removing black borders from images and videos
-            </Table.Caption>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th scope="col">Method</Table.Th>
-                <Table.Th scope="col">Batch speed</Table.Th>
-                <Table.Th scope="col">Privacy</Table.Th>
-                <Table.Th scope="col">Live preview</Table.Th>
-                <Table.Th scope="col">Cost</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {ROWS.map((r) => (
-                <Table.Tr key={r.method} data-ours={r.ours || undefined}>
-                  <Table.Th scope="row" className={classes.method}>
-                    {r.method}
-                    {r.ours && (
-                      <Badge size="xs" variant="filled" ml={8} className={classes.badge}>
-                        Ours
-                      </Badge>
-                    )}
-                  </Table.Th>
-                  <Table.Td>{r.speed}</Table.Td>
-                  <Table.Td>{r.privacy}</Table.Td>
-                  <Table.Td>{r.preview}</Table.Td>
-                  <Table.Td>{r.cost}</Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+    <Chapter tone="paper" id="compare-tools" index="10" label="Compare options" labelledBy="compare-tools-title">
+      <div className={classes.head}>
+        <Title order={2} id="compare-tools-title" className={classes.title}>
+          AutoCrop Pro vs manual editing, <Fade>cloud tools, and FFmpeg</Fade>
+        </Title>
+        <p className={classes.lead}>
+          Choosing how to strip letterboxes from a large media folder comes down to speed, privacy, and control.
+        </p>
       </div>
-    </Section>
+
+      <div
+        className={classes.scroller}
+        role="region"
+        aria-label="Comparison of batch crop methods"
+        tabIndex={0}
+        data-reveal
+      >
+        <table className={classes.table}>
+          <caption className={classes.caption}>
+            Comparison of batch crop methods for removing black borders from images and videos
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Method</th>
+              <th scope="col">Batch speed</th>
+              <th scope="col">Privacy</th>
+              <th scope="col">Live preview</th>
+              <th scope="col">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ROWS.map((row) => (
+              <tr key={row.method} data-ours={row.ours || undefined}>
+                <th scope="row" className={classes.method}>
+                  {row.ours && <span className={classes.dot} aria-hidden="true" />}
+                  {row.method}
+                  {row.ours && <span className={classes.sr}>{" (ours)"}</span>}
+                </th>
+                <td>{row.speed}</td>
+                <td>{row.privacy}</td>
+                <td>{row.preview}</td>
+                <td>{row.cost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Chapter>
   );
 }

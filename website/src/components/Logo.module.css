@@ -1,6 +1,11 @@
 .root {
   display: inline-flex;
-  border-radius: var(--mantine-radius-md);
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  color: inherit;
+  line-height: 1;
+  text-decoration: none;
 }
 
 .mark {
@@ -9,9 +14,11 @@
 }
 
 .word {
+  font-weight: 400;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .pro {
-  color: var(--mantine-primary-color-filled);
+  color: var(--fade);
 }

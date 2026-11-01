@@ -1,7 +1,8 @@
-import { Badge, Box, Button, Group, Paper, Progress, Select, Slider, Stack, Switch, Text, Title } from "@mantine/core";
-import { ArrowsOutSimpleIcon, CaretRightIcon, FileImageIcon, LightningIcon } from "@phosphor-icons/react";
+import { Loader, Progress, Select, Slider, Switch } from "@mantine/core";
 
+import { Pill } from "../../components/Section";
 import type { Options, OutputFormat, Progress as ProgressState } from "../types";
+import classes from "./SettingsPanel.module.css";
 
 type Props = {
   options: Options;
@@ -25,7 +26,6 @@ const FORMATS: { value: OutputFormat; label: string }[] = [
 const switchStyles = {
   body: { justifyContent: "space-between", alignItems: "center", width: "100%" },
   labelWrapper: { flex: 1 },
-  label: { fontWeight: 600 },
 } as const;
 
 export default function SettingsPanel({
@@ -42,119 +42,90 @@ export default function SettingsPanel({
   const pct = Math.round(progress.ratio * 100);
 
   return (
-    <Stack gap={0}>
-      <Stack gap="md" p="md">
-        <div>
-          <Title order={3}>Export settings</Title>
-          <Text size="sm" c="dimmed" mt={2}>
-            Applied to every file in the queue.
-          </Text>
+    <div className={classes.panel}>
+      <div>
+        <h2 className={classes.title}>Export settings</h2>
+        <p className={classes.hint}>Applied to every file in the queue.</p>
+      </div>
+
+      <div>
+        <div className={classes.row}>
+          <span className={classes.label} id="tolerance-label">
+            Detection tolerance
+          </span>
+          <span className={classes.value}>{options.tolerance}%</span>
         </div>
+        <Slider
+          min={0}
+          max={100}
+          step={1}
+          value={options.tolerance}
+          onChange={onTolerance}
+          disabled={processing}
+          label={null}
+          size="sm"
+          marks={[
+            { value: 0, label: "0" },
+            { value: 50, label: "50" },
+            { value: 100, label: "100" },
+          ]}
+          mt={8}
+          mb={32}
+          thumbLabel="Detection tolerance"
+        />
+        <p className={classes.hint}>Higher values treat more dark pixels as border.</p>
+      </div>
 
-        <Paper withBorder p="md">
-          <Group justify="space-between" mb="xs">
-            <Text fw={600} size="sm" id="tolerance-label">
-              Detection tolerance
-            </Text>
-            <Badge variant="light" size="lg" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {options.tolerance}%
-            </Badge>
-          </Group>
-          <Slider
-            min={0}
-            max={100}
-            step={1}
-            value={options.tolerance}
-            onChange={onTolerance}
-            disabled={processing}
-            label={null}
-            marks={[
-              { value: 0, label: "0" },
-              { value: 50, label: "50" },
-              { value: 100, label: "100" },
-            ]}
-            mb={36}
-            thumbLabel="Detection tolerance"
-          />
-          <Text size="xs" c="dimmed">
-            Higher values treat more dark pixels as border.
-          </Text>
-        </Paper>
+      <div>
+        <Select
+          label="Image output format"
+          data={FORMATS}
+          value={options.outputFormat}
+          onChange={(v) => v && onFormat(v as OutputFormat)}
+          allowDeselect={false}
+          disabled={processing}
+          size="md"
+          classNames={{ label: classes.fieldLabel, input: classes.input }}
+          comboboxProps={{ withinPortal: true, radius: "md" }}
+        />
+        <p className={classes.hint}>Videos keep MP4 or WebM. GIF exports as PNG.</p>
+      </div>
 
-        <Paper withBorder p="md">
-          <Select
-            label="Image output format"
-            data={FORMATS}
-            value={options.outputFormat}
-            onChange={(v) => v && onFormat(v as OutputFormat)}
-            allowDeselect={false}
-            disabled={processing}
-            leftSection={<FileImageIcon size={18} />}
-            styles={{ label: { fontWeight: 600, marginBottom: 8 } }}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Text size="xs" c="dimmed" mt={8}>
-            Videos keep MP4 or WebM. GIF exports as PNG.
-          </Text>
-        </Paper>
+      <Switch
+        label="10px padding"
+        description="Keep a buffer so captions are not clipped"
+        labelPosition="left"
+        styles={switchStyles}
+        classNames={{ label: classes.fieldLabel }}
+        checked={options.padding}
+        disabled={processing}
+        onChange={(e) => onPadding(e.currentTarget.checked)}
+      />
 
-        <Paper withBorder p="md">
-          <Switch
-            label="10px padding"
-            description="Keep a buffer so captions are not clipped"
-            labelPosition="left"
-            styles={switchStyles}
-            checked={options.padding}
-            disabled={processing}
-            onChange={(e) => onPadding(e.currentTarget.checked)}
-            thumbIcon={<ArrowsOutSimpleIcon size={10} weight="bold" />}
-          />
-        </Paper>
-      </Stack>
-
-      <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}>
+      <div className={classes.footer}>
         {progress.visible && (
-          <Stack gap={6} mb="sm" role="status" aria-live="polite">
-            <Group justify="space-between" wrap="nowrap" gap="xs">
-              <Text size="xs" c="dimmed" truncate>
-                {progress.message || "Working…"}
-              </Text>
-              <Text size="xs" fw={600}>
-                {pct}%
-              </Text>
-            </Group>
-            <Progress value={pct} size="sm" animated radius="xl" aria-label="Processing progress" />
-          </Stack>
+          <div className={classes.progress} role="status" aria-live="polite">
+            <div className={classes.row}>
+              <span className={classes.status}>{progress.message || "Working…"}</span>
+              <span className={classes.value}>{pct}%</span>
+            </div>
+            <Progress value={pct} size={2} radius={0} aria-label="Processing progress" className={classes.track} />
+          </div>
         )}
 
-        <Button
-          fullWidth
+        <Pill
           size="lg"
+          className={classes.process}
           onClick={onProcess}
-          disabled={!hasFiles}
-          loading={processing}
-          leftSection={<LightningIcon size={20} weight="fill" />}
-          rightSection={
-            hasFiles ? (
-              <Group gap={6} wrap="nowrap">
-                <Badge variant="white" size="sm" circle={fileCount < 10}>
-                  {fileCount}
-                </Badge>
-                <CaretRightIcon size={16} weight="bold" />
-              </Group>
-            ) : undefined
-          }
-          justify="space-between"
+          disabled={!hasFiles || processing}
+          aria-busy={processing || undefined}
+          icon={processing ? <Loader size={16} color="currentColor" /> : undefined}
         >
-          {processing ? "Processing" : "Process files"}
-        </Button>
+          {processing ? "Processing" : hasFiles ? `Process ${fileCount} ${fileCount === 1 ? "file" : "files"}` : "Process files"}
+        </Pill>
 
-        {!hasFiles && !processing && (
-          <Text size="xs" c="dimmed" ta="center" mt="xs">
-            Add files to get started
-          </Text>
-        )}
-      </Box>
-    </Stack>
+        {!hasFiles && !processing && <p className={classes.addHint}>Add files to get started</p>}
+      </div>
+    </div>
   );
 }

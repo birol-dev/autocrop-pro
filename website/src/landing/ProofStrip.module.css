@@ -1,16 +1,39 @@
-.strip {
-  border-block: 1px solid var(--mantine-color-default-border);
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+.strip.strip {
+  padding-bottom: var(--space-item);
+}
+
+.formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px clamp(32px, 6vw, 96px);
+  padding-top: var(--space-block);
+  margin-bottom: var(--space-block);
+}
+
+.group {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--ink);
+}
+
+.groupLabel {
+  margin-right: 12px;
+  color: var(--muted);
 }
 
 .value {
-  font-size: clamp(2rem, 1.4rem + 2.2vw, 3rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-family: var(--font-serif);
+  font-weight: 200;
+  font-size: clamp(2.5rem, 1.7rem + 3.4vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  background-image: linear-gradient(135deg, var(--mantine-color-brand-6), var(--mantine-color-pink-5));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+}
+
+.label {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
 }

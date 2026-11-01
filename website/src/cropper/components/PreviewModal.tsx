@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Badge, Center, Group, Kbd, Loader, LoadingOverlay, Modal, SimpleGrid, Stack, Text } from "@mantine/core";
-import { CropIcon, ImageSquareIcon } from "@phosphor-icons/react";
+import { Loader, LoadingOverlay, Modal } from "@mantine/core";
+import { CheckCircleIcon, ImageSquareIcon, WarningCircleIcon } from "@phosphor-icons/react";
 
 import { displayedCrop } from "../useCropper";
 import type { Item, Options } from "../types";
@@ -14,14 +14,10 @@ type Props = {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <Stack gap={2}>
-      <Text size="xs" c="dimmed" tt="uppercase" fw={600} lh={1}>
-        {label}
-      </Text>
-      <Text size="sm" fw={600} className={classes.statValue}>
-        {value}
-      </Text>
-    </Stack>
+    <div className={classes.stat}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
   );
 }
 
@@ -83,38 +79,33 @@ function PreviewBody({ item, options }: { item: Item; options: Options }) {
               overlayProps={{ backgroundOpacity: 0.55, blur: 3, color: "#0b0b12" }}
               loaderProps={{
                 children: (
-                  <Stack align="center" gap="xs">
-                    <Loader color="white" size="md" />
-                    <Text size="sm" c="white" fw={500}>
-                      Detecting crop area…
-                    </Text>
-                  </Stack>
+                  <div className={classes.loading}>
+                    <Loader color="white" size="sm" />
+                    <p className={classes.loadingText}>Detecting crop area…</p>
+                  </div>
                 ),
               }}
             />
           </div>
         ) : (
-          <Center>
-            <Stack align="center" gap="xs" c="dimmed">
-              <ImageSquareIcon size={48} weight="duotone" />
-              <Text size="sm">Preview unavailable in this browser</Text>
-            </Stack>
-          </Center>
+          <div className={classes.failed}>
+            <ImageSquareIcon size={40} weight="regular" aria-hidden="true" />
+            <p>Preview unavailable in this browser</p>
+          </div>
         )}
       </div>
 
-      <Group className={classes.footer} justify="space-between" align="center" px="md" py="sm" wrap="nowrap">
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xl" verticalSpacing="xs">
+      <div className={classes.footer}>
+        <dl className={classes.stats}>
           <Stat label="Original" value={known ? `${item.naturalW} × ${item.naturalH}` : "—"} />
           <Stat label="Cropped" value={crop ? `${crop.w} × ${crop.h}` : "—"} />
           <Stat label="Offset" value={crop ? `${crop.x}, ${crop.y}` : "—"} />
           <Stat label="Trimmed" value={trimmed !== null ? `${trimmed}%` : "—"} />
-        </SimpleGrid>
-        <Group gap={6} wrap="nowrap" c="dimmed" visibleFrom="sm">
-          <Kbd size="xs">Esc</Kbd>
-          <Text size="xs">to close</Text>
-        </Group>
-      </Group>
+        </dl>
+        <p className={classes.esc}>
+          <kbd className={classes.kbd}>Esc</kbd> to close
+        </p>
+      </div>
     </>
   );
 }
@@ -129,21 +120,22 @@ export default function PreviewModal({ item, options, onClose }: Props) {
 
   const status =
     shown?.status === "detecting" ? (
-      <Badge color="brand" variant="light" leftSection={<Loader size={10} color="brand" />}>
+      <span className={classes.status}>
+        <span className={classes.spinner} aria-hidden="true" />
         Detecting crop…
-      </Badge>
+      </span>
     ) : crop ? (
-      <Badge color="teal" variant="light" leftSection={<CropIcon size={12} weight="bold" />}>
+      <span className={classes.status}>
+        <CheckCircleIcon size={12} weight="bold" aria-hidden="true" />
         Crop detected
-      </Badge>
+      </span>
     ) : shown?.error ? (
-      <Badge color="red" variant="light">
+      <span className={classes.status} data-error>
+        <WarningCircleIcon size={12} weight="bold" aria-hidden="true" />
         Detection failed
-      </Badge>
+      </span>
     ) : (
-      <Badge color="gray" variant="light">
-        No crop detected
-      </Badge>
+      <span className={classes.status}>No crop detected</span>
     );
 
   return (
@@ -154,19 +146,20 @@ export default function PreviewModal({ item, options, onClose }: Props) {
       padding={0}
       overlayProps={{ backgroundOpacity: 0.55, blur: 4 }}
       transitionProps={{ transition: "pop", duration: 150 }}
-      title={
-        <Group gap="sm" wrap="nowrap">
-          <Text fw={650} truncate maw={{ base: 150, sm: 420 }} title={shown?.name}>
-            {shown?.name}
-          </Text>
-          {status}
-        </Group>
-      }
-      styles={{
-        header: { borderBottom: "1px solid var(--mantine-color-default-border)", padding: "12px 16px" },
-        title: { minWidth: 0, flex: 1 },
-        body: { padding: 0 },
+      classNames={{
+        content: classes.content,
+        header: classes.header,
+        title: classes.title,
+        body: classes.body,
       }}
+      title={
+        <div className={classes.titleRow}>
+          <p className={classes.fileName} title={shown?.name}>
+            {shown?.name}
+          </p>
+          {status}
+        </div>
+      }
     >
       {shown && <PreviewBody key={shown.id} item={shown} options={options} />}
     </Modal>

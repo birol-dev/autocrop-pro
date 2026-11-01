@@ -1,0 +1,64 @@
+.grid {
+  display: grid;
+  gap: var(--space-group);
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--space-group);
+  }
+}
+
+.grid > :first-child {
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-column: span 2;
+  }
+}
+
+.grid > :last-child {
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-column: span 2;
+  }
+}
+
+.statement {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2.25rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.statement a,
+.meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.code {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.72em;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: var(--space-group) 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Runs off the right page edge on purpose; the mock runs off the panel. */
+.panel {
+  overflow: hidden;
+  height: clamp(320px, 44vw, 640px);
+  margin-top: var(--space-block);
+  margin-right: calc(var(--page-margin) * -1);
+  padding: clamp(24px, 5vw, 72px) 0 0 clamp(24px, 5vw, 72px);
+  border-radius: var(--radius-panel) 0 0 var(--radius-panel);
+  background: var(--panel);
+}

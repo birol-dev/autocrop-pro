@@ -1,8 +1,8 @@
-import { Button, Group, List, Paper, Stack, Text, ThemeIcon, Title } from "@mantine/core";
-import { ArrowUpRightIcon, CheckIcon, DownloadSimpleIcon, GithubLogoIcon } from "@phosphor-icons/react";
+import { Title } from "@mantine/core";
+import { ArrowUpRightIcon } from "@phosphor-icons/react";
 
 import { GITHUB_URL, RELEASES_URL } from "../content/site";
-import { Section } from "../components/Section";
+import { Chapter, Fade } from "../components/Section";
 import classes from "./OpenSource.module.css";
 
 const POINTS = [
@@ -13,62 +13,40 @@ const POINTS = [
 
 export default function OpenSource() {
   return (
-    <Section id="open-source" labelledBy="oss-title">
-      <Paper withBorder radius="xl" className={classes.panel} data-reveal>
-        <div className={classes.grid}>
-          <Stack gap="md">
-            <Text className={classes.eyebrow}>Open source</Text>
-            <Title order={2} id="oss-title" style={{ letterSpacing: "-0.025em", textWrap: "balance" }}>
-              Free forever. Inspect everything.
-            </Title>
-            <Text c="dimmed" fz="lg" lh={1.6}>
-              No subscriptions, no license keys, no black-box uploads. AutoCrop Pro is MIT-licensed — read the Rust
-              backend on GitHub, fork it, contribute fixes, and ship your own builds.
-            </Text>
-            <List
-              spacing="xs"
-              size="md"
-              center
-              mt="xs"
-              icon={
-                <ThemeIcon size={22} radius="xl" color="teal" variant="light">
-                  <CheckIcon size={13} weight="bold" />
-                </ThemeIcon>
-              }
-            >
-              {POINTS.map((p) => (
-                <List.Item key={p}>{p}</List.Item>
-              ))}
-            </List>
-          </Stack>
-
-          <Stack gap="sm" className={classes.actions}>
-            <Button
-              component="a"
-              href={GITHUB_URL}
-              size="lg"
-              variant="default"
-              leftSection={<GithubLogoIcon size={20} weight="fill" />}
-              rightSection={<ArrowUpRightIcon size={16} weight="bold" />}
-            >
-              View source on GitHub
-            </Button>
-            <Button
-              component="a"
-              href={RELEASES_URL}
-              size="lg"
-              leftSection={<DownloadSimpleIcon size={20} weight="bold" />}
-            >
-              Download latest release
-            </Button>
-            <Group gap={6} justify="center" c="dimmed" fz="xs" mt={4}>
-              <span>MIT licensed</span>
-              <span aria-hidden="true">·</span>
-              <span>Windows 10/11</span>
-            </Group>
-          </Stack>
+    <Chapter tone="white" id="open-source" index="09" label="Open source" labelledBy="oss-title">
+      <div className={classes.grid}>
+        <div className={classes.copy} data-reveal>
+          <Title order={2} id="oss-title" className={classes.title}>
+            Free forever. <Fade>Inspect everything.</Fade>
+          </Title>
+          <p className={classes.lead}>
+            No subscriptions, no license keys, no black-box uploads. AutoCrop Pro is MIT-licensed — read the Rust backend
+            on GitHub, fork it, contribute fixes, and ship your own builds.
+          </p>
+          <ul className={classes.points}>
+            {POINTS.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
         </div>
-      </Paper>
-    </Section>
+
+        <div className={classes.mark} data-reveal>
+          <span className={classes.glow} aria-hidden="true" />
+          <img className={classes.logo} src="/logo-app.png" alt="AutoCrop Pro app icon" width={220} height={220} />
+        </div>
+
+        <div className={classes.actions} data-reveal>
+          <a className={classes.action} href={GITHUB_URL}>
+            <span>View source on GitHub</span>
+            <ArrowUpRightIcon size={26} weight="light" aria-hidden="true" />
+          </a>
+          <a className={classes.action} href={RELEASES_URL}>
+            <span>Download latest release</span>
+            <ArrowUpRightIcon size={26} weight="light" aria-hidden="true" />
+          </a>
+          <p className={classes.note}>MIT licensed · Windows 10/11</p>
+        </div>
+      </div>
+    </Chapter>
   );
 }

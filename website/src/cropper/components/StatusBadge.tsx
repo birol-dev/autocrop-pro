@@ -1,7 +1,7 @@
-import { Badge, Loader } from "@mantine/core";
 import { CheckCircleIcon, ClockIcon, WarningCircleIcon } from "@phosphor-icons/react";
 
 import type { ItemStatus } from "../types";
+import classes from "./StatusBadge.module.css";
 
 const LABEL: Record<ItemStatus, string> = {
   queued: "Queued",
@@ -14,34 +14,24 @@ const LABEL: Record<ItemStatus, string> = {
 
 type Props = { status: ItemStatus; size?: "xs" | "sm" };
 
-/** Status pill for a queue item; rendered on top of a thumbnail, so filled variants stay legible. */
+/** Status label for a queue item; rendered on top of a thumbnail, so it keeps its own scrim. */
 export default function StatusBadge({ status, size = "sm" }: Props) {
-  switch (status) {
-    case "ready":
-    case "done":
-      return (
-        <Badge size={size} color="teal" variant="filled" leftSection={<CheckCircleIcon size={12} weight="fill" />}>
-          {LABEL[status]}
-        </Badge>
-      );
-    case "detecting":
-    case "processing":
-      return (
-        <Badge size={size} color="brand" variant="filled" leftSection={<Loader size={10} color="white" />}>
-          {LABEL[status]}
-        </Badge>
-      );
-    case "error":
-      return (
-        <Badge size={size} color="red" variant="filled" leftSection={<WarningCircleIcon size={12} weight="fill" />}>
-          {LABEL[status]}
-        </Badge>
-      );
-    default:
-      return (
-        <Badge size={size} color="dark" variant="filled" leftSection={<ClockIcon size={12} weight="bold" />}>
-          {LABEL[status]}
-        </Badge>
-      );
-  }
+  const busy = status === "detecting" || status === "processing";
+  const Icon =
+    status === "ready" || status === "done"
+      ? CheckCircleIcon
+      : status === "error"
+        ? WarningCircleIcon
+        : ClockIcon;
+
+  return (
+    <span className={classes.badge} data-status={status} data-size={size}>
+      {busy ? (
+        <span className={classes.spinner} aria-hidden="true" />
+      ) : (
+        <Icon size={11} weight="bold" aria-hidden="true" />
+      )}
+      {LABEL[status]}
+    </span>
+  );
 }

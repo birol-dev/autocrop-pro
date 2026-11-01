@@ -10,7 +10,7 @@
   <!-- Apply the saved colour scheme before first paint (avoids a flash of the wrong theme). -->
   <script>
     try {
-      var s = localStorage.getItem("mantine-color-scheme-value") || "auto";
+      var s = localStorage.getItem("mantine-color-scheme-value") || "light";
       var dark = s === "dark" || (s === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
       document.documentElement.setAttribute("data-mantine-color-scheme", dark ? "dark" : "light");
     } catch (e) {}

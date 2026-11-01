@@ -1,9 +1,10 @@
-import { ActionIcon, Burger, Button, Drawer, Group, Stack, Tooltip } from "@mantine/core";
-import { useDisclosure, useWindowScroll } from "@mantine/hooks";
+import { Burger, Drawer, Tooltip } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { DownloadSimpleIcon, GithubLogoIcon } from "@phosphor-icons/react";
 
 import { GITHUB_URL, NAV_LINKS, RELEASES_URL } from "../content/site";
 import Logo from "./Logo";
+import { Pill } from "./Section";
 import ThemeToggle from "./ThemeToggle";
 import classes from "./SiteHeader.module.css";
 
@@ -14,52 +15,47 @@ type SiteHeaderProps = {
 
 export default function SiteHeader({ current }: SiteHeaderProps) {
   const [opened, { toggle, close }] = useDisclosure(false);
-  const [scroll] = useWindowScroll();
 
   return (
     <>
-      <header className={classes.header} data-scrolled={scroll.y > 8 || undefined}>
-        <div className={classes.inner}>
+      <header className={classes.header}>
+        <div className={classes.logoPill}>
           <Logo />
+        </div>
 
-          <nav className={classes.nav} aria-label="Main navigation">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={classes.link}
-                aria-current={current === "cropper" && link.href === "/cropper/" ? "page" : undefined}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
-          <Group gap="xs" wrap="nowrap" className={classes.actions}>
-            <Tooltip label="Source on GitHub" position="bottom">
-              <ActionIcon
-                component="a"
-                href={GITHUB_URL}
-                variant="default"
-                size="lg"
-                radius="md"
-                aria-label="AutoCrop Pro on GitHub"
-                visibleFrom="xs"
-              >
-                <GithubLogoIcon size={18} />
-              </ActionIcon>
-            </Tooltip>
-            <ThemeToggle />
-            <Button
-              component="a"
-              href={RELEASES_URL}
-              visibleFrom="sm"
-              leftSection={<DownloadSimpleIcon size={16} weight="bold" />}
+        <nav className={classes.nav} aria-label="Main navigation">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className={classes.link}
+              aria-current={current === "cropper" && link.href === "/cropper/" ? "page" : undefined}
             >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className={classes.actions}>
+          <Tooltip label="Source on GitHub" position="bottom">
+            <a href={GITHUB_URL} className={classes.iconLink} aria-label="AutoCrop Pro on GitHub">
+              <GithubLogoIcon size={18} />
+            </a>
+          </Tooltip>
+          <ThemeToggle />
+          <span className={classes.downloadWrap}>
+            <Pill href={RELEASES_URL} icon={<DownloadSimpleIcon size={15} weight="bold" />}>
               Download free
-            </Button>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" aria-label="Toggle navigation menu" />
-          </Group>
+            </Pill>
+          </span>
+          <Burger
+            opened={opened}
+            onClick={toggle}
+            hiddenFrom="md"
+            size="md"
+            className={classes.burger}
+            aria-label="Toggle navigation menu"
+          />
         </div>
       </header>
 
@@ -72,34 +68,28 @@ export default function SiteHeader({ current }: SiteHeaderProps) {
         title={<Logo size={30} href="/" />}
         hiddenFrom="md"
         overlayProps={{ backgroundOpacity: 0.5, blur: 3 }}
+        classNames={{
+          content: classes.drawer,
+          header: classes.drawerHeader,
+          title: classes.drawerTitle,
+          body: classes.drawerBody,
+        }}
       >
-        <Stack gap={4} component="nav" aria-label="Mobile navigation">
+        <nav className={classes.drawerNav} aria-label="Mobile navigation">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className={classes.drawerLink} onClick={close}>
               {link.label}
             </a>
           ))}
-          <Button
-            component="a"
-            href={RELEASES_URL}
-            mt="md"
-            size="md"
-            leftSection={<DownloadSimpleIcon size={18} weight="bold" />}
-            onClick={close}
-          >
+        </nav>
+        <div className={classes.drawerActions}>
+          <Pill href={RELEASES_URL} icon={<DownloadSimpleIcon size={18} weight="bold" />} onClick={close}>
             Download free
-          </Button>
-          <Button
-            component="a"
-            href={GITHUB_URL}
-            variant="default"
-            size="md"
-            leftSection={<GithubLogoIcon size={18} />}
-            onClick={close}
-          >
+          </Pill>
+          <Pill href={GITHUB_URL} variant="soft" icon={<GithubLogoIcon size={18} />} onClick={close}>
             View on GitHub
-          </Button>
-        </Stack>
+          </Pill>
+        </div>
       </Drawer>
     </>
   );

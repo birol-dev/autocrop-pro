@@ -1,66 +1,161 @@
-import type { ReactNode } from "react";
-import { Badge, Box, Container, Stack, Text, Title, type MantineColor } from "@mantine/core";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 
 import classes from "./Section.module.css";
 
-type SectionProps = {
+export type Tone = "white" | "paper" | "charcoal" | "black";
+
+type ChapterProps = {
   id?: string;
-  /** Alternate background band. */
-  tint?: boolean;
-  children: ReactNode;
-  /** Container width in px. */
-  size?: number;
+  /** Background swap that marks the chapter break. */
+  tone?: Tone;
+  /** Renders the numbered full-width index line, e.g. "01". */
+  index?: string;
+  /** Short label on the index line. */
+  label?: string;
   /** Accessible name for the section landmark (id of its heading). */
   labelledBy?: string;
+  /** Drop the page margins so the content can run edge to edge. */
+  bleed?: boolean;
+  /** Remove the chapter's top padding when it continues the previous one. */
+  flushTop?: boolean;
+  className?: string;
+  children: ReactNode;
 };
 
-export function Section({ id, tint, children, size = 1200, labelledBy }: SectionProps) {
+/** A page section: its own tone, the page margins and the chapter rhythm. */
+export function Chapter({ id, tone = "white", index, label, labelledBy, bleed, flushTop, className, children }: ChapterProps) {
+  const dark = tone === "charcoal" || tone === "black";
   return (
-    <Box
-      component="section"
+    <section
       id={id}
       aria-labelledby={labelledBy}
-      className={classes.section}
-      data-tint={tint || undefined}
+      data-tone={tone}
+      data-mantine-color-scheme={dark ? "dark" : undefined}
+      data-flush-top={flushTop || undefined}
+      className={[classes.chapter, className].filter(Boolean).join(" ")}
     >
-      <Container size={size} px={{ base: "md", sm: "xl" }}>
-        {children}
-      </Container>
-    </Box>
+      {index && (
+        <div className={classes.margins}>
+          <IndexLine index={index} label={label} />
+        </div>
+      )}
+      {bleed ? children : <div className={classes.margins}>{children}</div>}
+    </section>
   );
 }
 
-type SectionHeaderProps = {
-  eyebrow?: string;
-  eyebrowColor?: MantineColor;
-  title: ReactNode;
-  lead?: ReactNode;
-  align?: "center" | "left";
-  titleId?: string;
+/** `01 ─────── Label`, the numbered line that opens a chapter. */
+export function IndexLine({ index, label }: { index: string; label?: string }) {
+  return (
+    <div className={classes.indexLine}>
+      <span>{index}</span>
+      <span className={classes.rule} aria-hidden="true" />
+      {label && <span>{label}</span>}
+    </div>
+  );
+}
+
+/** Page margins for anything that lives outside a Chapter. */
+export function Margins({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={[classes.margins, className].filter(Boolean).join(" ")}>{children}</div>;
+}
+
+/** The secondary words of a headline, faded instead of bolded. */
+export function Fade({ children }: { children: ReactNode }) {
+  return <span className={classes.fade}>{children}</span>;
+}
+
+/** Hairline grid: columns snap to the skeleton and 1px rules separate the cells. */
+export function Cells({
+  cols = 4,
+  colsMobile = 1,
+  className,
+  children,
+}: {
+  cols?: number;
+  colsMobile?: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={[classes.cells, className].filter(Boolean).join(" ")}
+      style={{ "--cols": cols, "--cols-mobile": colsMobile } as CSSProperties}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** One cell of a `Cells` grid. `tall` pins the content to the bottom of an empty cell. */
+export function Cell({ tall, className, children }: { tall?: boolean; className?: string; children: ReactNode }) {
+  return (
+    <div className={[classes.cell, className].filter(Boolean).join(" ")} data-tall={tall || undefined}>
+      {children}
+    </div>
+  );
+}
+
+type PillVariant = "solid" | "soft" | "plain";
+
+type PillBase = { variant?: PillVariant; size?: "md" | "lg"; icon?: ReactNode; iconRight?: ReactNode; children: ReactNode };
+type PillAnchor = PillBase & AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
+type PillButton = PillBase & ButtonHTMLAttributes<HTMLButtonElement> & { href?: undefined };
+
+/** The site's button. Every call to action is a pill, and it reads the local tone. */
+export function Pill({ variant = "solid", size = "md", icon, iconRight, className, children, ...rest }: PillAnchor | PillButton) {
+  const shared = {
+    className: [classes.pill, className].filter(Boolean).join(" "),
+    "data-variant": variant,
+    "data-size": size,
+  };
+  const content = (
+    <>
+      {icon}
+      <span>{children}</span>
+      {iconRight}
+    </>
+  );
+  if (typeof rest.href === "string") {
+    return (
+      <a {...shared} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button type="button" {...shared} {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}>
+      {content}
+    </button>
+  );
+}
+
+type MediaFrameProps = {
+  src: string;
+  alt: string;
+  /** CSS aspect-ratio, e.g. "4 / 3". */
+  ratio?: string;
+  /** Rotation in degrees for floating frames (5–10). Adds the floating shadow. */
+  tilt?: number;
+  /** Load straight away. Use for the first screen only. */
+  eager?: boolean;
+  className?: string;
+  /** Overlays such as crop brackets. Never put text on a picture. */
+  children?: ReactNode;
 };
 
-export function SectionHeader({ eyebrow, eyebrowColor, title, lead, align = "center", titleId }: SectionHeaderProps) {
+/** A rounded picture. No border and no shadow unless it floats. */
+export function MediaFrame({ src, alt, ratio = "16 / 9", tilt, eager, className, children }: MediaFrameProps) {
+  const style: CSSProperties = { aspectRatio: ratio };
+  if (tilt) style.rotate = `${tilt}deg`;
   return (
-    <Stack gap="sm" align={align === "center" ? "center" : "flex-start"} ta={align} mb={{ base: 36, sm: 56 }} data-reveal>
-      {eyebrow && (
-        <Badge variant="light" color={eyebrowColor} size="lg" tt="uppercase" className={classes.eyebrow}>
-          {eyebrow}
-        </Badge>
-      )}
-      <Title order={2} id={titleId} maw={820} className={classes.title}>
-        {title}
-      </Title>
-      {lead && (
-        <Text c="dimmed" fz={{ base: "md", sm: "lg" }} maw={680} lh={1.6}>
-          {lead}
-        </Text>
-      )}
-    </Stack>
+    <figure
+      className={[classes.media, className].filter(Boolean).join(" ")}
+      style={style}
+      data-floating={tilt ? true : undefined}
+    >
+      <img src={src} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" />
+      {children}
+    </figure>
   );
 }
-
-/** Highlighted words inside a heading. */
-export function Accent({ children }: { children: ReactNode }) {
-  return <span className={classes.accent}>{children}</span>;
-}
-

@@ -1,9 +1,10 @@
-import { Button, Center, Group, Paper, Stack, Text, ThemeIcon } from "@mantine/core";
-import { DownloadSimpleIcon, FilmStripIcon, ImageSquareIcon, TrayIcon } from "@phosphor-icons/react";
+import { DownloadSimpleIcon, FilmStripIcon, ImageSquareIcon } from "@phosphor-icons/react";
 
+import { Pill } from "../../components/Section";
 import { displayedCrop } from "../useCropper";
 import type { Item, Options } from "../types";
 import { formatBytes } from "../utils";
+import classes from "./ResultsList.module.css";
 
 type Props = {
   items: Item[];
@@ -18,70 +19,53 @@ export default function ResultsList({ items, options, onDownload, onDownloadAll,
 
   if (!ready.length) {
     return (
-      <Center mih={280}>
-        <Stack align="center" gap="xs" ta="center">
-          <ThemeIcon size={56} radius="xl" variant="light" color="gray">
-            <TrayIcon size={28} weight="duotone" />
-          </ThemeIcon>
-          <Text fw={600}>Nothing processed yet</Text>
-          <Text size="sm" c="dimmed" maw={320}>
-            Crop files from the queue and they will show up here, ready to download.
-          </Text>
-          <Button variant="light" size="xs" mt="xs" onClick={onGoToQueue}>
-            Go to queue
-          </Button>
-        </Stack>
-      </Center>
+      <div className={classes.empty}>
+        {/* A small stack of cropped frames: what this tab fills up with. */}
+        <svg className={classes.picture} viewBox="0 0 120 84" aria-hidden="true">
+          <rect x="24" y="4" width="72" height="30" rx="6" className={classes.frameBack} />
+          <rect x="12" y="20" width="96" height="40" rx="7" className={classes.frameMid} />
+          <rect x="0" y="40" width="120" height="44" rx="8" className={classes.frameFront} />
+        </svg>
+        <h2 className={classes.emptyTitle}>No cropped files yet</h2>
+        <p className={classes.emptyBody}>Process the files in your queue and they will be here, ready to download.</p>
+        <Pill onClick={onGoToQueue}>Go to queue</Pill>
+      </div>
     );
   }
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Text size="sm" c="dimmed">
-          Processed files stay in this tab until you download them.
-        </Text>
-        <Button leftSection={<DownloadSimpleIcon size={16} weight="bold" />} onClick={onDownloadAll} size="sm">
+    <div className={classes.list}>
+      <div className={classes.head}>
+        <p className={classes.hint}>Processed files stay in this tab until you download them.</p>
+        <Pill onClick={onDownloadAll} icon={<DownloadSimpleIcon size={16} />}>
           {ready.length === 1 ? "Download" : `Download all (${ready.length}) as zip`}
-        </Button>
-      </Group>
+        </Pill>
+      </div>
 
-      <Stack gap="xs" component="ul" m={0} p={0} style={{ listStyle: "none" }}>
+      <ul className={classes.rows}>
         {ready.map((f) => {
           const Icon = f.type === "video" ? FilmStripIcon : ImageSquareIcon;
           const crop = displayedCrop(f, options) ?? f.crop;
           const dims = crop ? `${crop.w} × ${crop.h}` : null;
           return (
-            <Paper component="li" key={f.id} withBorder p="sm" radius="md">
-              <Group justify="space-between" wrap="nowrap" gap="md">
-                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                  <ThemeIcon size={38} radius="md" variant="light" color={f.type === "video" ? "pink" : "brand"}>
-                    <Icon size={20} weight="duotone" />
-                  </ThemeIcon>
-                  <div style={{ minWidth: 0 }}>
-                    <Text fw={600} size="sm" truncate title={f.resultName ?? undefined}>
-                      {f.resultName}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {dims ? `${dims} · ` : ""}
-                      {formatBytes((f.resultBlob as Blob).size)}
-                    </Text>
-                  </div>
-                </Group>
-                <Button
-                  variant="light"
-                  size="xs"
-                  onClick={() => onDownload(f.id)}
-                  leftSection={<DownloadSimpleIcon size={14} weight="bold" />}
-                  aria-label={`Download ${f.resultName}`}
-                >
-                  Download
-                </Button>
-              </Group>
-            </Paper>
+            <li key={f.id} className={classes.row}>
+              <Icon size={18} className={classes.icon} aria-hidden="true" />
+              <div className={classes.file}>
+                <p className={classes.name} title={f.resultName ?? undefined}>
+                  {f.resultName}
+                </p>
+                <p className={classes.meta}>
+                  {dims ? `${dims} · ` : ""}
+                  {formatBytes((f.resultBlob as Blob).size)}
+                </p>
+              </div>
+              <Pill variant="soft" onClick={() => onDownload(f.id)} aria-label={`Download ${f.resultName}`}>
+                Download
+              </Pill>
+            </li>
           );
         })}
-      </Stack>
-    </Stack>
+      </ul>
+    </div>
   );
 }

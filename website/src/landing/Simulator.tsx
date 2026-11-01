@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Anchor, Badge, Group, Paper, Slider, Stack, Text, Title } from "@mantine/core";
+import { Slider, Title } from "@mantine/core";
 import { CheckCircleIcon, CrosshairSimpleIcon, WarningIcon, XCircleIcon } from "@phosphor-icons/react";
 
 import Scene from "../components/Scene";
-import { Section } from "../components/Section";
+import { Chapter, Fade } from "../components/Section";
 import classes from "./Simulator.module.css";
 
 type Tone = "idle" | "ok" | "warn" | "danger";
@@ -31,7 +31,7 @@ function simulate(tolerance: number): Sim {
   }
   if (tolerance <= 45) {
     return {
-      box: { top: 12, left: 0, width: 100, height: 76 },
+      box: { top: 13, left: 0, width: 100, height: 74 },
       w: 1920,
       h: 800,
       detail: "Exact borders detected",
@@ -40,7 +40,7 @@ function simulate(tolerance: number): Sim {
     };
   }
   const scale = (tolerance - 45) / 55;
-  const indentY = 12 + scale * 25;
+  const indentY = 13 + scale * 25;
   const indentX = scale * 30;
   const width = 100 - indentX * 2;
   const height = 100 - indentY * 2;
@@ -54,114 +54,102 @@ function simulate(tolerance: number): Sim {
   };
 }
 
-const TONE = {
-  idle: { color: "gray", icon: CrosshairSimpleIcon },
-  ok: { color: "teal", icon: CheckCircleIcon },
-  warn: { color: "yellow", icon: WarningIcon },
-  danger: { color: "red", icon: XCircleIcon },
+const ICONS = {
+  idle: CrosshairSimpleIcon,
+  ok: CheckCircleIcon,
+  warn: WarningIcon,
+  danger: XCircleIcon,
 } as const;
 
 export default function Simulator() {
   const [tolerance, setTolerance] = useState(20);
   const sim = simulate(tolerance);
-  const tone = TONE[sim.tone];
-  const ToneIcon = tone.icon;
+  const StateIcon = ICONS[sim.tone];
 
   return (
-    <Section id="simulator" labelledBy="sim-title">
+    <Chapter tone="white" id="simulator" index="07" label="Interactive demo" labelledBy="sim-title">
       <div className={classes.grid}>
-        <Stack gap="md" data-reveal>
-          <Badge variant="light" size="lg" tt="uppercase" w="fit-content" style={{ letterSpacing: "0.08em", fontSize: 11 }}>
-            Interactive demo
-          </Badge>
-          <Title order={2} id="sim-title" style={{ letterSpacing: "-0.025em", textWrap: "balance" }}>
-            Try the crop tolerance slider
+        <div className={classes.copy} data-reveal>
+          <Title order={2} id="sim-title" className={classes.title}>
+            Try the crop <Fade>tolerance slider</Fade>
           </Title>
-          <Text c="dimmed" fz="lg" lh={1.6}>
+          <p className={classes.lead}>
             Drag the slider to see how AutoCrop Pro sweeps pixel histograms inward from each edge. Below 13% misses
             borders. Above 45% clips into your content.
-          </Text>
-          <Text c="dimmed" fz="lg" lh={1.6}>
-            <Anchor href="/cropper/" inherit fw={600}>
+          </p>
+          <p className={classes.lead}>
+            <a href="/cropper/" className={classes.link}>
               Crop your own files in the browser
-            </Anchor>{" "}
+            </a>{" "}
             — no install, files stay in this tab.
-          </Text>
-        </Stack>
+          </p>
+        </div>
 
-        <Paper withBorder radius="xl" shadow="lg" className={classes.window} data-reveal>
-          <div className={classes.bar}>
-            <span className={classes.dots} aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            <Text size="xs" c="dimmed" fw={600}>
-              Crop Tolerance Playground
-            </Text>
-          </div>
-
-          <div className={classes.body}>
-            <div className={classes.canvas} role="img" aria-label="Simulated widescreen image with letterbox borders">
-              <Scene mode="full" />
-              <div
-                className={classes.box}
-                data-tone={sim.tone}
-                style={{
-                  top: `${sim.box.top}%`,
-                  left: `${sim.box.left}%`,
-                  width: `${sim.box.width}%`,
-                  height: `${sim.box.height}%`,
-                }}
-              >
-                <span className={classes.handle} data-pos="tl" />
-                <span className={classes.handle} data-pos="tr" />
-                <span className={classes.handle} data-pos="bl" />
-                <span className={classes.handle} data-pos="br" />
-                <span className={classes.dims}>
-                  {sim.w} × {sim.h}
-                </span>
-              </div>
+        <div className={classes.panel} data-reveal>
+          <div className={classes.window}>
+            <div className={classes.bar}>
+              <span>Crop Tolerance Playground</span>
             </div>
 
-            <Group justify="space-between" mt="lg" mb={6}>
-              <Text fw={650} component="label" id="tolerance-label">
-                Tolerance
-              </Text>
-              <Badge size="lg" variant="light" color={tone.color} style={{ fontVariantNumeric: "tabular-nums" }}>
-                {tolerance}%
-              </Badge>
-            </Group>
+            <div className={classes.body}>
+              <div className={classes.canvas} role="img" aria-label="Simulated widescreen image with letterbox borders">
+                <Scene mode="full" />
+                <div
+                  className={classes.box}
+                  data-tone={sim.tone}
+                  style={{
+                    top: `${sim.box.top}%`,
+                    left: `${sim.box.left}%`,
+                    width: `${sim.box.width}%`,
+                    height: `${sim.box.height}%`,
+                  }}
+                >
+                  <span className={classes.handle} data-pos="tl" />
+                  <span className={classes.handle} data-pos="tr" />
+                  <span className={classes.handle} data-pos="bl" />
+                  <span className={classes.handle} data-pos="br" />
+                  <span className={classes.dims}>
+                    {sim.w} × {sim.h}
+                  </span>
+                </div>
+              </div>
 
-            <Slider
-              value={tolerance}
-              onChange={setTolerance}
-              min={0}
-              max={100}
-              step={1}
-              color={tone.color}
-              label={null}
-              marks={[
-                { value: 13, label: "13%" },
-                { value: 45, label: "45%" },
-              ]}
-              mb={30}
-              thumbLabel="Crop tolerance"
-              aria-labelledby="tolerance-label"
-            />
+              <div className={classes.sliderHead}>
+                <span className={classes.label} id="tolerance-label">
+                  Tolerance
+                </span>
+                <span className={classes.value}>{tolerance}%</span>
+              </div>
 
-            <Group justify="space-between" gap="xs" wrap="wrap">
-              <Group gap={6} c="dimmed" wrap="nowrap" fz="sm" aria-live="polite">
-                <ToneIcon size={16} weight="bold" />
-                <span>{sim.detail}</span>
-              </Group>
-              <Badge variant="light" color={tone.color} size="md">
-                {sim.verdict}
-              </Badge>
-            </Group>
+              <Slider
+                className={classes.slider}
+                value={tolerance}
+                onChange={setTolerance}
+                min={0}
+                max={100}
+                step={1}
+                color="var(--ink)"
+                label={null}
+                marks={[
+                  { value: 13, label: "13%" },
+                  { value: 45, label: "45%" },
+                ]}
+                thumbLabel="Crop tolerance"
+                aria-labelledby="tolerance-label"
+                classNames={{ markLabel: classes.markLabel }}
+              />
+
+              <div className={classes.status}>
+                <span className={classes.detail} aria-live="polite">
+                  <StateIcon size={16} weight="bold" aria-hidden="true" />
+                  <span>{sim.detail}</span>
+                </span>
+                <span className={classes.verdict}>{sim.verdict}</span>
+              </div>
+            </div>
           </div>
-        </Paper>
+        </div>
       </div>
-    </Section>
+    </Chapter>
   );
 }

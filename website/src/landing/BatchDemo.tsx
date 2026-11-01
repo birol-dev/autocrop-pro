@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Badge, Button, Group, Loader, Paper, Progress, ScrollArea, Stack, Text, Title } from "@mantine/core";
-import { ArrowClockwiseIcon, CheckCircleIcon, PlayIcon } from "@phosphor-icons/react";
+import { Loader, ScrollArea, Title } from "@mantine/core";
+import { ArrowClockwiseIcon, PlayIcon } from "@phosphor-icons/react";
 
 import { VERSION } from "../content/site";
-import { Section } from "../components/Section";
+import { Chapter, Fade, Pill } from "../components/Section";
 import classes from "./BatchDemo.module.css";
 
 type Tone = "info" | "system" | "success" | "warning";
@@ -17,7 +17,7 @@ const JOBS: Job[] = [
     logs: [
       ["[INFO] Processing IMG_0412.JPG (1/4)", "info"],
       ["[RUST] Edge sweep — tolerance 20%", "system"],
-      ["[RUST] Histogram: top=130px, bottom=130px", "info"],
+      ["[RUST] Histogram: top=140px, bottom=140px", "info"],
       ["[OK] IMG_0412_cropped.png → lossless PNG", "success"],
     ],
   },
@@ -28,7 +28,7 @@ const JOBS: Job[] = [
     logs: [
       ["[INFO] Processing VLOG_JUNE_2026.MP4 (2/4)", "info"],
       ["[FFMPEG] cropdetect on 30 frames…", "system"],
-      ["[FFMPEG] crop=1920:800:0:130", "info"],
+      ["[FFMPEG] crop=1920:800:0:140", "info"],
       ["[OK] VLOG_JUNE_2026_cropped.mp4 encoded", "success"],
     ],
   },
@@ -124,89 +124,67 @@ export default function BatchDemo() {
   }
 
   return (
-    <Section id="batch" tint labelledBy="batch-title">
+    <Chapter tone="charcoal" id="batch" index="08" label="Live demo" labelledBy="batch-title">
       <div className={classes.grid}>
-        <Stack gap="md" data-reveal>
-          <Badge variant="light" size="lg" tt="uppercase" w="fit-content" style={{ letterSpacing: "0.08em", fontSize: 11 }}>
-            Live demo
-          </Badge>
-          <Title order={2} id="batch-title" style={{ letterSpacing: "-0.025em", textWrap: "balance" }}>
-            Watch Rust chew through a batch
+        <div className={classes.copy} data-reveal>
+          <Title order={2} id="batch-title" className={classes.title}>
+            Watch Rust <Fade>chew through a batch</Fade>
           </Title>
-          <Text c="dimmed" fz="lg" lh={1.6}>
+          <p className={classes.lead}>
             Hit simulate to see how the backend queues files, spawns FFmpeg for video, and reports progress in real time.
-          </Text>
+          </p>
 
-          <Button
-            size="md"
-            w="fit-content"
+          <Pill
             onClick={run}
-            loading={running}
-            leftSection={ran ? <ArrowClockwiseIcon size={18} weight="bold" /> : <PlayIcon size={18} weight="fill" />}
+            disabled={running}
             aria-label="Simulate batch crop processing"
+            icon={
+              running ? (
+                <Loader size={16} color="currentColor" />
+              ) : ran ? (
+                <ArrowClockwiseIcon size={18} weight="bold" />
+              ) : (
+                <PlayIcon size={18} weight="fill" />
+              )
+            }
           >
             {running ? "Processing…" : ran ? "Run again" : "Run batch simulation"}
-          </Button>
+          </Pill>
+        </div>
 
-          <Stack gap="xs" mt="xs" aria-label="Simulated file queue">
-            {JOBS.map((job, i) => {
-              const row = rows[i];
-              return (
-                <Paper key={job.name} withBorder p="sm" radius="md">
-                  <Group justify="space-between" wrap="nowrap" gap="sm">
-                    <div style={{ minWidth: 0 }}>
-                      <Text fw={650} fz="sm" truncate>
-                        {job.name}
-                      </Text>
-                      <Text fz="xs" c="dimmed">
-                        {job.meta}
-                      </Text>
-                    </div>
-                    <Group gap="sm" wrap="nowrap">
-                      <Text fz="xs" fw={600} w={34} ta="right" style={{ fontVariantNumeric: "tabular-nums" }}>
-                        {row.pct}%
-                      </Text>
-                      <Badge
-                        w={104}
-                        variant="light"
-                        color={row.status === "done" ? "teal" : row.status === "processing" ? "brand" : "gray"}
-                        leftSection={
-                          row.status === "done" ? (
-                            <CheckCircleIcon size={12} weight="fill" />
-                          ) : row.status === "processing" ? (
-                            <Loader size={10} color="brand" />
-                          ) : undefined
-                        }
-                      >
-                        {STATUS_LABEL[row.status]}
-                      </Badge>
-                    </Group>
-                  </Group>
-                  <Progress
-                    value={row.pct}
-                    size="xs"
-                    mt={8}
-                    color={row.status === "done" ? "teal" : "brand"}
-                    aria-label={`${job.name} progress`}
-                  />
-                </Paper>
-              );
-            })}
-          </Stack>
-        </Stack>
+        <ol className={classes.queue} aria-label="Simulated file queue" data-reveal>
+          {JOBS.map((job, i) => {
+            const row = rows[i];
+            return (
+              <li key={job.name} className={classes.row}>
+                <div className={classes.rowHead}>
+                  <span className={classes.name}>{job.name}</span>
+                  <span className={classes.pct}>{row.pct}%</span>
+                </div>
+                <div className={classes.rowMeta}>
+                  <span>{job.meta}</span>
+                  <span className={classes.status} data-status={row.status}>
+                    {STATUS_LABEL[row.status]}
+                  </span>
+                </div>
+                <div
+                  className={classes.track}
+                  role="progressbar"
+                  aria-label={`${job.name} progress`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={row.pct}
+                >
+                  <span className={classes.fill} style={{ width: `${row.pct}%` }} />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
 
-        <Paper className={classes.terminal} radius="lg" data-reveal>
-          <div className={classes.termBar}>
-            <span className={classes.dots} aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            <Text size="xs" fw={600} c="gray.5">
-              Rust backend logs
-            </Text>
-          </div>
-          <ScrollArea h={{ base: 300, md: 520 }} viewportRef={viewport} type="auto" scrollbarSize={8}>
+        <div className={classes.terminal} data-reveal>
+          <div className={classes.termBar}>Rust backend logs</div>
+          <ScrollArea h={{ base: 300, md: 440 }} viewportRef={viewport} type="auto" scrollbarSize={8}>
             <div className={classes.logBody} role="log" aria-live="polite">
               {log.map((line) => (
                 <div key={line.id} className={classes.line} data-tone={line.tone}>
@@ -215,8 +193,8 @@ export default function BatchDemo() {
               ))}
             </div>
           </ScrollArea>
-        </Paper>
+        </div>
       </div>
-    </Section>
+    </Chapter>
   );
 }

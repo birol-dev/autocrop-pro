@@ -1,3 +1,24 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 180ms var(--ease-out);
+
+  @media (hover: hover) {
+    &:hover {
+      background: color-mix(in srgb, currentColor 8%, transparent);
+    }
+  }
+}
+
 /* Dark mode shows the sun (click -> light); light mode shows the moon (click -> dark). */
 .sun {
   @mixin light {

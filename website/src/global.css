@@ -1,19 +1,125 @@
-/* Global tweaks only — everything else is Mantine + CSS Modules. */
+/* Design tokens and global tweaks. Everything else is Mantine + CSS Modules.
+   The reasoning behind these values lives in website/DESIGN.md. */
+:root {
+  --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+
+  /* Rhythm: tiny inside a unit, medium inside a group, huge between chapters. */
+  --page-margin: clamp(20px, 4.5vw, 65px);
+  --space-unit: 8px;
+  --space-group: clamp(16px, 2vw, 24px);
+  --space-block: clamp(40px, 5vw, 64px);
+  --space-item: clamp(80px, 8vw, 120px);
+  --space-chapter: clamp(96px, 13vw, 200px);
+
+  /* Very round: panels, cards, small inner pieces. Controls are pills (999px). */
+  --radius-panel: 32px;
+  --radius-card: 24px;
+  --radius-inner: 10px;
+
+  /* Only floating items (menu, mock windows, tilted frames) get a shadow. */
+  --shadow-float: 0 24px 60px -24px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Tones. Sections pick one with data-tone; components read only these variables,
+   so the same markup works on every background and in both colour schemes. */
+:root,
+[data-tone='white'] {
+  --surface: #ffffff;
+  --panel: #f4f4f4;
+  --ink: #141414;
+  --muted: #5f5f5f;
+  --fade: #8a8a8a;
+  --hairline: #e5e5e2;
+}
+
+[data-tone='paper'] {
+  --surface: #f4f4f4;
+  --panel: #e9e9e6;
+  --ink: #141414;
+  --muted: #5f5f5f;
+  --fade: #8a8a8a;
+  --hairline: #dcdcd8;
+}
+
+[data-tone='charcoal'] {
+  --surface: #262626;
+  --panel: #323232;
+  --ink: #f4f4f4;
+  --muted: #b6b6b6;
+  --fade: #8f8f8f;
+  --hairline: #3d3d3d;
+}
+
+[data-tone='black'] {
+  --surface: #000000;
+  --panel: #1a1a1a;
+  --ink: #ffffff;
+  --muted: #b6b6b6;
+  --fade: #8f8f8f;
+  --hairline: #2c2c2c;
+}
+
+:root[data-mantine-color-scheme='dark'],
+:root[data-mantine-color-scheme='dark'] [data-tone='white'] {
+  --surface: #101010;
+  --panel: #1c1c1c;
+  --ink: #ededed;
+  --muted: #a8a8a8;
+  --fade: #808080;
+  --hairline: #2a2a2a;
+}
+
+:root[data-mantine-color-scheme='dark'] [data-tone='paper'] {
+  --surface: #161616;
+  --panel: #222222;
+  --ink: #ededed;
+  --muted: #a8a8a8;
+  --fade: #808080;
+  --hairline: #2e2e2e;
+}
+
+/* Mantine components inherit the local tone. Named explicitly because the demos
+   use data-tone for their own states on inner elements. */
+:root,
+[data-tone='white'],
+[data-tone='paper'],
+[data-tone='charcoal'],
+[data-tone='black'] {
+  --mantine-color-text: var(--ink);
+  --mantine-color-dimmed: var(--muted);
+  --mantine-color-default-border: var(--hairline);
+}
+
+[data-tone='white'],
+[data-tone='paper'],
+[data-tone='charcoal'],
+[data-tone='black'] {
+  --mantine-color-body: var(--surface);
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 88px;
+  scroll-padding-top: 96px;
 }
 
 body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background-color: var(--mantine-color-body);
+  font-weight: 400;
+  background-color: var(--surface);
+  color: var(--ink);
 }
 
-/* Marketing type needs a touch more contrast than dense app UI on dark. */
-:root[data-mantine-color-scheme='dark'] {
-  --mantine-color-text: #f0f0f5;
-  --mantine-color-dimmed: #a0a0ae;
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  font-optical-sizing: auto;
 }
 
 .skip-link {
@@ -21,11 +127,10 @@ body {
   top: 8px;
   left: 8px;
   z-index: 1000;
-  padding: 8px 14px;
-  border-radius: var(--mantine-radius-md);
-  background: var(--mantine-primary-color-filled);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #141414;
   color: #fff;
-  font-weight: 600;
   font-size: 14px;
   text-decoration: none;
   transform: translateY(-200%);
@@ -35,7 +140,19 @@ body {
 }
 
 ::selection {
-  background: alpha(var(--mantine-color-brand-5), 0.3);
+  background: #141414;
+  color: #fff;
+}
+
+/* A single, tone-aware focus ring for every interactive element. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 
 /* Fade-up on scroll (progressive enhancement, no JS): content is visible by
@@ -67,6 +184,7 @@ body {
   }
   * {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -79,10 +197,10 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--mantine-color-default-border);
-  border: 3px solid var(--mantine-color-body);
+  background: var(--hairline);
+  border: 3px solid var(--surface);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mantine-color-dimmed);
+  background: var(--fade);
 }
