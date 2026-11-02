@@ -10,6 +10,7 @@ import { classifyFile } from "@/lib/media";
 import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify";
 
 // Import modular components
+import LogoMark from "@/components/LogoMark";
 import OutputsPanel from "@/components/OutputsPanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import Dropzone from "@/components/Dropzone";
@@ -326,7 +327,7 @@ export default function App() {
                 progress={isProcessing ? progress / 100 : null}
                 brand={
                     <div className={classes.brand}>
-                        <img src="/logo.png" alt="" className={classes.logo} />
+                        <LogoMark size={26} className={classes.logo} />
                         <span className={classes.appName}>AutoCrop Pro</span>
                     </div>
                 }

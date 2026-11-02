@@ -15,9 +15,8 @@
 }
 
 .logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 22%;
+  display: block;
+  flex: none;
 }
 
 .appName {

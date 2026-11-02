@@ -20,6 +20,17 @@ radii or spacing values.
   so their words, glass window and veil are styled directly in white and the photo's sky blue.
 - The base tones, radii, shadow and easing live in `src/tokens.css`, shared with the desktop app.
 
+## Logo
+
+- A thick-and-thin A, like Newsreader's, carved out of a letterboxed picture: the two black bars
+  are its serifs, and the sky behind it is the only colour. It is a small picture, which is why it
+  may have a hue when the frame may not. Do not recolour it or draw it without the bars.
+- `src-tauri/icons/logo.svg` is the source. Every icon and `public/` PNG is generated from it with
+  `tauri icon`; the social image `logo-app.png` is the same drawing, square and opaque.
+- `LogoMark` draws it live in the site's and app's headers. The bars are the only moving idea: they
+  slide apart when the page opens, and close and reopen once on hover. Nothing else animates, it
+  never loops, and it holds still under reduced motion.
+
 ## Type
 
 - Size over weight. Thin giant serif (Newsreader, weight 200) plus one small sans (Inter, 400).

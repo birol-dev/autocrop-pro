@@ -10,7 +10,7 @@
 
 .mark {
   display: block;
-  border-radius: 22%;
+  flex: none;
 }
 
 .word {

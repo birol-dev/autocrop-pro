@@ -1,0 +1,45 @@
+/* Runs from CSS, not the effect, so the prerendered logo opens at first paint without a flash. */
+.top,
+.bottom,
+.picture {
+  animation: 760ms cubic-bezier(0.16, 1, 0.3, 1) 140ms backwards;
+}
+
+.top {
+  animation-name: logo-top;
+}
+
+.bottom {
+  animation-name: logo-bottom;
+}
+
+.picture {
+  transform-origin: 256px 256px;
+  animation-name: logo-picture;
+}
+
+@keyframes logo-top {
+  from {
+    transform: translateY(124px);
+  }
+}
+
+@keyframes logo-bottom {
+  from {
+    transform: translateY(-124px);
+  }
+}
+
+@keyframes logo-picture {
+  from {
+    transform: scale(1.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top,
+  .bottom,
+  .picture {
+    animation: none;
+  }
+}
