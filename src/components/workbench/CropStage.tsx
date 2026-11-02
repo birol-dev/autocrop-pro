@@ -105,7 +105,7 @@ export default function CropStage({ src, type, name, crop, pending, frame, paddi
                 ) : (
                     <div className={classes.failed}>
                         <ImageSquareIcon size={36} aria-hidden="true" />
-                        <p>No preview for this file. It can still be cropped.</p>
+                        <p>{error ? "No preview for this file." : "No preview for this file. It can still be cropped."}</p>
                     </div>
                 )}
             </div>
