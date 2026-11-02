@@ -1,4 +1,4 @@
-import { ActionIcon, Tooltip, useMantineColorScheme } from "@mantine/core";
+import { Tooltip, useMantineColorScheme } from "@mantine/core";
 import { MoonIcon, SunIcon } from "@phosphor-icons/react";
 
 import classes from "./ThemeToggle.module.css";
@@ -11,16 +11,15 @@ export default function ThemeToggle() {
   const { toggleColorScheme } = useMantineColorScheme();
   return (
     <Tooltip label="Toggle light / dark" position="bottom">
-      <ActionIcon
-        variant="default"
-        size="lg"
-        radius="md"
+      <button
+        type="button"
+        className={classes.root}
         onClick={() => toggleColorScheme()}
         aria-label="Toggle color theme"
       >
         <SunIcon size={18} className={classes.sun} />
         <MoonIcon size={18} className={classes.moon} />
-      </ActionIcon>
+      </button>
     </Tooltip>
   );
 }

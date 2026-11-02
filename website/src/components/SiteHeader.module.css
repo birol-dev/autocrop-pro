@@ -1,41 +1,84 @@
 .header {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 16px;
+  left: var(--page-margin);
+  right: var(--page-margin);
   z-index: 200;
-  height: 68px;
-  border-bottom: 1px solid transparent;
-  background-color: light-dark(alpha(var(--mantine-color-white), 0.78), alpha(var(--mantine-color-dark-9), 0.72));
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  backdrop-filter: saturate(180%) blur(14px);
-  transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.header[data-scrolled] {
-  border-bottom-color: var(--mantine-color-default-border);
-  box-shadow: 0 1px 12px rgba(17, 17, 26, 0.06);
-}
-
-.inner {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: var(--mantine-spacing-lg);
-  height: 100%;
-  max-width: 1200px;
-  margin-inline: auto;
-  padding-inline: var(--mantine-spacing-md);
+  gap: 12px;
+  pointer-events: none;
 
-  @media (min-width: $mantine-breakpoint-sm) {
-    padding-inline: var(--mantine-spacing-xl);
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: 1fr auto 1fr;
   }
+}
+
+.header > * {
+  pointer-events: auto;
+}
+
+.logoPill,
+.nav,
+.actions {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #141414;
+  box-shadow: var(--shadow-float);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+
+  transition:
+    background-color 240ms var(--ease-out),
+    box-shadow 240ms var(--ease-out),
+    color 240ms var(--ease-out);
+
+  @mixin dark {
+    background: rgba(20, 20, 20, 0.72);
+    color: #ededed;
+  }
+}
+
+/* Over the hero the nav melts into the picture; the pills come back once it has scrolled away. */
+.header[data-on-hero] {
+  --fade: rgba(255, 255, 255, 0.72);
+}
+
+.header[data-on-hero] .burger {
+  --burger-color: #fff;
+  --mantine-color-text: #fff;
+}
+
+.header[data-on-hero] .logoPill,
+.header[data-on-hero] .nav,
+.header[data-on-hero] .actions {
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.header[data-on-hero] .downloadWrap a {
+  background: #fff;
+  color: #141414;
+}
+
+.logoPill {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 52px;
+  padding: 8px 18px 8px 8px;
 }
 
 .nav {
   display: none;
-  justify-content: center;
+  align-items: center;
+  justify-self: center;
   gap: 2px;
+  padding: 5px;
 
   @media (min-width: $mantine-breakpoint-md) {
     display: flex;
@@ -43,35 +86,123 @@
 }
 
 .actions {
-  grid-column: 3;
-}
-
-.link,
-.drawerLink {
   display: inline-flex;
   align-items: center;
-  padding: 8px 14px;
-  font-size: var(--mantine-font-size-sm);
-  font-weight: 550;
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+  justify-self: end;
+  gap: 2px;
+  padding: 4px;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding-inline: 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  color: inherit;
   text-decoration: none;
-  border-radius: var(--mantine-radius-md);
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
+  transition: background-color 180ms var(--ease-out);
+}
 
-  @mixin hover {
-    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
-    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
-  }
+.link[aria-current='page'] {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
 
-  &[aria-current='page'] {
-    color: var(--mantine-primary-color-filled);
-    background-color: light-dark(var(--mantine-primary-color-0), alpha(var(--mantine-primary-color-filled), 0.14));
+.iconLink {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 180ms var(--ease-out);
+
+  @media (min-width: $mantine-breakpoint-xs) {
+    display: inline-flex;
   }
 }
 
+@media (hover: hover) {
+  .link:hover,
+  .iconLink:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  .link[aria-current='page']:hover {
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+}
+
+.downloadWrap {
+  display: none;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    display: inline-flex;
+  }
+}
+
+.burger {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 999px;
+}
+
+.drawer {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.drawerHeader {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.drawerTitle {
+  font-weight: 400;
+}
+
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100% - 61px);
+}
+
+.drawerNav {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--hairline);
+}
+
 .drawerLink {
-  padding: 12px 14px;
-  font-size: var(--mantine-font-size-md);
+  padding-block: 18px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 200;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 180ms var(--ease-out);
+
+  @media (hover: hover) {
+    &:hover {
+      color: var(--muted);
+    }
+  }
+}
+
+.drawerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: var(--space-block);
 }

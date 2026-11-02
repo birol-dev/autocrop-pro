@@ -1,0 +1,35 @@
+/* The tokens the desktop app and the website share. Website-only tones and spacing
+   live in website/src/global.css; the reasoning is in website/DESIGN.md. */
+:root {
+  --font-serif: 'Newsreader Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+
+  /* Very round: panels, cards, small inner pieces. Controls are pills (999px). */
+  --radius-panel: 32px;
+  --radius-card: 24px;
+  --radius-inner: 10px;
+
+  /* Only floating items (menu, mock windows, tilted frames) get a shadow. */
+  --shadow-float: 0 24px 60px -24px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root,
+[data-tone='white'] {
+  --surface: #ffffff;
+  --panel: #f4f4f4;
+  --ink: #141414;
+  --muted: #5f5f5f;
+  --fade: #8a8a8a;
+  --hairline: #e5e5e2;
+}
+
+:root[data-mantine-color-scheme='dark'],
+:root[data-mantine-color-scheme='dark'] [data-tone='white'] {
+  --surface: #101010;
+  --panel: #1c1c1c;
+  --ink: #ededed;
+  --muted: #a8a8a8;
+  --fade: #808080;
+  --hairline: #2a2a2a;
+}

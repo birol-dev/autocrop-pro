@@ -1,6 +1,8 @@
-use image::GenericImageView;
+use image::{DynamicImage, GenericImageView, ImageDecoder, ImageReader};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fs::OpenOptions;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{mpsc, OnceLock};
@@ -36,6 +38,9 @@ pub struct ProgressEvent {
     pub current: usize,
     pub total: usize,
     pub message: String,
+    pub path: String,
+    /// Why this file failed, or None if it was written.
+    pub error: Option<String>,
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -68,22 +73,167 @@ pub fn round_even(val: u32) -> u32 {
     val - (val % 2)
 }
 
+/// Grows a crop by `pad` on every side; the far edge is measured from the original
+/// box so clamping at x/y = 0 doesn't shift the extra pixels to the other side.
+/// A zero-sized crop means "no detection, keep the whole frame" and stays that way.
+pub fn apply_padding(crop: &CropArea, pad: u32) -> CropArea {
+    if crop.w == 0 || crop.h == 0 {
+        return crop.clone();
+    }
+    let x = crop.x.saturating_sub(pad);
+    let y = crop.y.saturating_sub(pad);
+    CropArea {
+        w: crop.x + crop.w + pad - x,
+        h: crop.y + crop.h + pad - y,
+        x,
+        y,
+    }
+}
+
+/// Picks the output extension, preventing cross-type format mismatches.
+pub fn resolve_output_ext(ext: &str, output_format: &str) -> String {
+    let requested = if output_format == "Same as source" || output_format.is_empty() {
+        ext.to_string()
+    } else {
+        output_format.to_lowercase()
+    };
+
+    if is_video(ext) {
+        // Video input: only allow video output formats
+        if is_video(&requested) { requested } else { ext.to_string() }
+    } else if is_video(&requested) || requested == "gif" {
+        // Only the first GIF frame is decoded, so don't pass it off as an animation.
+        "png".to_string()
+    } else {
+        requested
+    }
+}
+
+/// Claims a free output name by creating the file, so two workers can never pick the same one.
+pub fn reserve_output_path(dir: &Path, stem: &str, ext: &str) -> std::io::Result<PathBuf> {
+    let mut attempt = 0;
+    loop {
+        let name = if attempt == 0 {
+            format!("{stem}_cropped.{ext}")
+        } else {
+            format!("{stem}_cropped ({attempt}).{ext}")
+        };
+        let path = dir.join(name);
+        match OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(_) => return Ok(path),
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => attempt += 1,
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+/// Media files in `paths`, walking into folders. Everything else is left out.
+pub fn collect_media_files(paths: &[String]) -> Vec<String> {
+    fn visit(path: &Path, found: &mut Vec<String>) {
+        // symlink_metadata: a linked folder is not followed, so a link loop can't recurse forever.
+        let Ok(meta) = std::fs::symlink_metadata(path) else { return };
+        if meta.is_dir() {
+            let Ok(entries) = std::fs::read_dir(path) else { return };
+            let mut children: Vec<PathBuf> = entries.flatten().map(|e| e.path()).collect();
+            children.sort();
+            for child in children {
+                visit(&child, found);
+            }
+        } else {
+            let ext = get_extension(path);
+            if is_video(&ext) || is_image(&ext) {
+                found.push(path.to_string_lossy().into_owned());
+            }
+        }
+    }
+
+    let mut found = Vec::new();
+    for path in paths {
+        visit(Path::new(path), &mut found);
+    }
+    found
+}
+
+/// FFmpeg with no console window: the release build is a GUI app, so Windows would flash one per call.
+fn ffmpeg_command() -> std::process::Command {
+    let mut cmd = std::process::Command::new("ffmpeg");
+    cmd.args(["-hide_banner", "-nostdin"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
+/// Decodes an image upright: applies EXIF orientation and trusts the file's contents over its extension.
+fn load_image(path: &str) -> Result<DynamicImage, String> {
+    let mut decoder = ImageReader::open(path)
+        .map_err(|e| e.to_string())?
+        .with_guessed_format()
+        .map_err(|e| e.to_string())?
+        .into_decoder()
+        .map_err(|e| e.to_string())?;
+    let orientation = decoder.orientation().map_err(|e| e.to_string())?;
+    let mut img = DynamicImage::from_decoder(decoder).map_err(|e| e.to_string())?;
+    img.apply_orientation(orientation);
+    Ok(img)
+}
+
+/// Converts to a pixel layout the target encoder accepts.
+fn encodable(img: DynamicImage, target_ext: &str) -> DynamicImage {
+    match target_ext {
+        // The only encoders here that take more than 8 bits per channel.
+        "png" | "tif" | "tiff" => img,
+        // JPEG does not support alpha
+        "jpg" | "jpeg" => DynamicImage::ImageRgb8(img.to_rgb8()),
+        _ if img.color().has_alpha() => DynamicImage::ImageRgba8(img.to_rgba8()),
+        _ => DynamicImage::ImageRgb8(img.to_rgb8()),
+    }
+}
 
 // ── Crop Detection ──────────────────────────────────────────────────────────
 
+/// Smallest box holding the picture of every sampled frame, so a dark scene can't cut into a
+/// brighter one. Black frames report negative sizes, which the regex skips on purpose.
+pub fn crop_from_cropdetect(stderr: &str) -> Option<CropArea> {
+    let mut bounds: Option<(u32, u32, u32, u32)> = None;
+    for cap in crop_regex().captures_iter(stderr) {
+        let w: u32 = cap[1].parse().unwrap_or(0);
+        let h: u32 = cap[2].parse().unwrap_or(0);
+        let x: u32 = cap[3].parse().unwrap_or(0);
+        let y: u32 = cap[4].parse().unwrap_or(0);
+        if w == 0 || h == 0 {
+            continue;
+        }
+        let (left, top, right, bottom) = bounds.unwrap_or((x, y, x + w, y + h));
+        bounds = Some((left.min(x), top.min(y), right.max(x + w), bottom.max(y + h)));
+    }
+    bounds.map(|(left, top, right, bottom)| CropArea {
+        w: right - left,
+        h: bottom - top,
+        x: left,
+        y: top,
+    })
+}
+
 /// Detect crop boundaries for a video file using FFmpeg's cropdetect filter.
-fn detect_video_crop(file_path: &str, tolerance: f32) -> Result<CropArea, String> {
+pub fn detect_video_crop(file_path: &str, tolerance: f32) -> Result<CropArea, String> {
     // FFmpeg cropdetect limit: 0.0 = very strict (only pure black), 1.0 = very loose
     // Our "tolerance" slider: 0 = detect nothing as border, 100 = aggressively detect borders
     // So tolerance maps directly: limit = tolerance / 100
     let limit = (tolerance / 100.0).clamp(0.0, 1.0);
-    let crop_filter = format!("cropdetect=limit={:.4}:round=2:reset=1", limit);
+    // Two samples a second over the first 20 seconds: consecutive frames would all land
+    // inside a black or fading intro and find nothing.
+    let crop_filter = format!("fps=2,cropdetect=limit={:.4}:round=2:reset=1:skip=0", limit);
 
-    let output = std::process::Command::new("ffmpeg")
+    let output = ffmpeg_command()
         .args([
             "-i", file_path,
-            "-vframes", "30",
+            "-frames:v", "40",
             "-vf", &crop_filter,
+            "-an", "-sn",
             "-f", "null",
             "-",
         ])
@@ -91,33 +241,18 @@ fn detect_video_crop(file_path: &str, tolerance: f32) -> Result<CropArea, String
         .map_err(|e| format!("FFmpeg not found or failed to start: {}", e))?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    let re = crop_regex();
 
-    // Collect all detected crops and pick the most common (mode) for robustness
-    let mut counts = std::collections::HashMap::new();
-    for cap in re.captures_iter(&stderr) {
-        let w: u32 = cap[1].parse().unwrap_or(0);
-        let h: u32 = cap[2].parse().unwrap_or(0);
-        let x: u32 = cap[3].parse().unwrap_or(0);
-        let y: u32 = cap[4].parse().unwrap_or(0);
-        if w > 0 && h > 0 {
-            *counts.entry((w, h, x, y)).or_insert(0usize) += 1;
-        }
+    match crop_from_cropdetect(&stderr) {
+        Some(crop) => Ok(crop),
+        None if output.status.success() => Ok(CropArea { w: 0, h: 0, x: 0, y: 0 }),
+        None => Err(format!("FFmpeg error: {}", stderr.lines().last().unwrap_or("unknown"))),
     }
-
-    let best_crop = counts
-        .into_iter()
-        .max_by_key(|&(_, count)| count)
-        .map(|((w, h, x, y), _)| CropArea { w, h, x, y })
-        .unwrap_or(CropArea { w: 0, h: 0, x: 0, y: 0 });
-
-    Ok(best_crop)
 }
 
 /// Detect crop boundaries for an image using histogram-based edge detection.
 pub fn detect_image_crop(file_path: &str, tolerance: f32) -> Result<CropArea, String> {
 
-    let img = image::open(file_path)
+    let img = load_image(file_path)
         .map_err(|e| format!("Failed to open image: {}", e))?
         .to_rgb8();
     let (width, height) = img.dimensions();
@@ -207,6 +342,13 @@ async fn process_files(
         .map_err(|e| format!("Processing task failed: {e}"))?
 }
 
+#[tauri::command]
+async fn expand_paths(paths: Vec<String>) -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || collect_media_files(&paths))
+        .await
+        .map_err(|e| format!("Folder scan failed: {e}"))
+}
+
 fn process_files_inner(
     app: tauri::AppHandle,
     window: Window,
@@ -221,70 +363,29 @@ fn process_files_inner(
     let (error_tx, error_rx) = mpsc::channel();
 
     items.into_par_iter().for_each_with(error_tx, |tx, item| {
-        let path = Path::new(&item.path);
-        let ext = get_extension(path);
-        let filename = path
+        let filename = Path::new(&item.path)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("output");
 
-        // Resolve output extension, preventing cross-type format mismatches
-        let requested_ext = if options.output_format == "Same as source" || options.output_format.is_empty() {
-            ext.clone()
-        } else {
-            options.output_format.to_lowercase()
-        };
-
-        let safe_ext = if is_video(&ext) {
-            // Video input: only allow video output formats
-            if is_video(&requested_ext) { requested_ext } else { ext.clone() }
-        } else {
-            // Image input: only allow image output formats
-            if is_video(&requested_ext) { "png".to_string() } else { requested_ext }
-        };
-
-        let mut out_path = output_dir.join(format!("{}_cropped.{}", filename, safe_ext));
-        let mut collision = 1;
-        while out_path.exists() {
-            out_path = output_dir.join(format!("{}_cropped ({}).{}", filename, collision, safe_ext));
-            collision += 1;
-        }
-
-        // Apply optional padding (frame clamps happen in process_single_*)
-        let mut crop = item.crop.clone();
-        if options.padding {
-            let pad: u32 = 10;
-            crop.x = crop.x.saturating_sub(pad);
-            crop.y = crop.y.saturating_sub(pad);
-            crop.w = crop.w.saturating_add(pad * 2);
-            crop.h = crop.h.saturating_add(pad * 2);
-        }
-
-        let err_msg = if is_video(&ext) {
-            process_single_video(&item.path, &crop, &out_path)
-        } else {
-            process_single_image(&item.path, &crop, &safe_ext, &out_path)
-        };
-
-        // Delete original only on success
-        if err_msg.is_none() && options.delete_original {
-            let _ = std::fs::remove_file(&item.path);
-        }
+        let result = process_item(&item, &options, &output_dir);
 
         // Report progress to frontend
         let done = completed_count.fetch_add(1, Ordering::SeqCst) + 1;
-        let message = match &err_msg {
-            Some(err) => {
-                let _ = tx.send(err.clone());
+        let message = match &result {
+            Err(err) => {
+                let _ = tx.send(format!("{}: {}", filename, err));
                 format!("Error: {} — {}", filename, err)
             }
-            None => format!("Processed {}", filename),
+            Ok(_) => format!("Processed {}", filename),
         };
 
         let _ = window.emit("crop-progress", ProgressEvent {
             current: done,
             total,
             message,
+            path: item.path.clone(),
+            error: result.err(),
         });
     });
 
@@ -301,13 +402,58 @@ fn process_files_inner(
     Ok(())
 }
 
+/// Crops one file into `output_dir` and returns the path it wrote.
+/// The source is only deleted once a non-empty output exists.
+pub fn process_item(
+    item: &ProcessItem,
+    options: &ProcessOptions,
+    output_dir: &Path,
+) -> Result<PathBuf, String> {
+    let path = Path::new(&item.path);
+    let ext = get_extension(path);
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let out_ext = resolve_output_ext(&ext, &options.output_format);
+    let out_path = reserve_output_path(output_dir, stem, &out_ext)
+        .map_err(|e| format!("Cannot create output file: {}", e))?;
+
+    // Frame clamps happen in process_single_*
+    let crop = if options.padding {
+        apply_padding(&item.crop, 10)
+    } else {
+        item.crop.clone()
+    };
+
+    let err_msg = if is_video(&ext) {
+        process_single_video(&item.path, &crop, &out_path)
+    } else {
+        process_single_image(&item.path, &crop, &out_ext, &out_path)
+    };
+
+    let failure = err_msg.or_else(|| match std::fs::metadata(&out_path) {
+        Ok(meta) if meta.len() > 0 => None,
+        _ => Some("Output file is empty".to_string()),
+    });
+    if let Some(err) = failure {
+        let _ = std::fs::remove_file(&out_path);
+        return Err(err);
+    }
+
+    if options.delete_original {
+        let _ = std::fs::remove_file(path);
+    }
+    Ok(out_path)
+}
+
 /// Process a single video file through FFmpeg crop filter.
 fn process_single_video(
     input_path: &str,
     crop: &CropArea,
     out_path: &Path,
 ) -> Option<String> {
-    let mut cmd = std::process::Command::new("ffmpeg");
+    let mut cmd = ffmpeg_command();
     cmd.arg("-y").arg("-i").arg(input_path);
 
     let crop_str;
@@ -327,18 +473,12 @@ fn process_single_video(
         }
     }
 
-    cmd.args(["-c:a", "copy", out_path.to_str().unwrap_or("")]);
+    cmd.args(["-c:a", "copy"]).arg(out_path);
 
     match cmd.output() {
         Ok(output) if output.status.success() => None,
-        Ok(output) => {
-            let _ = std::fs::remove_file(out_path);
-            Some(format!("FFmpeg error: {}", String::from_utf8_lossy(&output.stderr).lines().last().unwrap_or("unknown")))
-        }
-        Err(e) => {
-            let _ = std::fs::remove_file(out_path);
-            Some(format!("FFmpeg not found: {}", e))
-        }
+        Ok(output) => Some(format!("FFmpeg error: {}", String::from_utf8_lossy(&output.stderr).lines().last().unwrap_or("unknown"))),
+        Err(e) => Some(format!("FFmpeg not found: {}", e)),
     }
 }
 
@@ -350,7 +490,7 @@ pub fn process_single_image(
     out_path: &Path,
 ) -> Option<String> {
 
-    let img = match image::open(input_path) {
+    let img = match load_image(input_path) {
         Ok(img) => img,
         Err(e) => return Some(format!("Cannot open image: {}", e)),
     };
@@ -371,19 +511,9 @@ pub fn process_single_image(
 
     let cropped = img.crop_imm(safe_x, safe_y, final_w, final_h);
 
-    // JPEG does not support alpha — convert to RGB8 before saving
-    let save_result = if target_ext == "jpg" || target_ext == "jpeg" {
-        cropped.to_rgb8().save(out_path)
-    } else {
-        cropped.save(out_path)
-    };
-
-    match save_result {
+    match encodable(cropped, target_ext).save(out_path) {
         Ok(_) => None,
-        Err(e) => {
-            let _ = std::fs::remove_file(out_path);
-            Some(format!("Save failed: {}", e))
-        }
+        Err(e) => Some(format!("Save failed: {}", e)),
     }
 }
 
@@ -437,7 +567,7 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("explorer")
-            .arg(format!("/select,{}", path))
+            .args(["/select,", &path])
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -561,6 +691,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             detect_crop_areas,
             process_files,
+            expand_paths,
             open_output_folder,
             list_output_files,
             get_save_location,
@@ -580,3 +711,6 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod tests;

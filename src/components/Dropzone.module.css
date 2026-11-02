@@ -1,46 +1,46 @@
 .root {
   display: flex;
+  flex: 1;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  gap: 28px;
+  margin: 16px;
+  padding: 32px 24px;
+  border-radius: var(--radius-card);
+  background: var(--panel);
   text-align: center;
-  color: inherit;
-  border: 2px dashed var(--mantine-color-default-border);
-  border-radius: var(--mantine-radius-lg);
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.root:hover,
-.root:focus-visible {
-  border-color: var(--mantine-primary-color-filled);
-  background-color: light-dark(var(--mantine-primary-color-0), alpha(var(--mantine-primary-color-filled), 0.08));
+  transition: box-shadow 180ms var(--ease-out);
 }
 
 .root[data-hover] {
-  border-style: solid;
-  border-color: var(--mantine-primary-color-filled);
-  background-color: light-dark(var(--mantine-primary-color-light), alpha(var(--mantine-primary-color-filled), 0.16));
-  box-shadow: 0 0 0 4px alpha(var(--mantine-primary-color-filled), 0.15);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
-.root[data-disabled] {
-  opacity: 0.5;
-  pointer-events: none;
+.title {
+  margin: 0;
 }
 
-.root[data-compact] {
-  text-align: left;
+.fade {
+  color: var(--fade);
 }
 
-.root[data-compact] > * {
-  width: 100%;
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
-/* Empty queue: the drop target fills the rest of the window. */
-.root:not([data-compact]) {
-  min-height: calc(100dvh - var(--app-shell-header-offset, 60px) - var(--app-shell-padding, 24px) * 2);
+.actions button[data-variant='default'] {
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.formats {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
 }

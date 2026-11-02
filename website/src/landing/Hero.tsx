@@ -1,83 +1,62 @@
-import { Badge, Box, Button, Container, Group, Text, ThemeIcon, Title } from "@mantine/core";
-import {
-  ArrowRightIcon,
-  BrowserIcon,
-  CpuIcon,
-  CrosshairSimpleIcon,
-  SealCheckIcon,
-  WindowsLogoIcon,
-} from "@phosphor-icons/react";
+import { Title } from "@mantine/core";
+import { WindowsLogoIcon } from "@phosphor-icons/react";
 
+import { Fade, Pill } from "../components/Section";
+import { useScrub } from "../components/useScrub";
+import { MEDIA } from "../content/media";
 import { RELEASES_URL } from "../content/site";
-import AppMock from "./AppMock";
+import AppWindow from "./AppWindow";
 import classes from "./Hero.module.css";
 
-const CHECKS = [
-  { icon: BrowserIcon, text: "In-browser cropper — files stay in this tab, no account" },
-  { icon: CpuIcon, text: "Windows app for 500+ files, Parallel Rust, custom output folders" },
-  { icon: CrosshairSimpleIcon, text: "Live crop overlay with a single tolerance slider" },
-];
-
+/**
+ * The headline sits in the sky of a landscape, with the app rising out of the
+ * bottom of the screen. Scrolling lifts the window to the centre, plays a batch
+ * through it, then lets dusk fall so the page runs on into the black section below.
+ */
 export default function Hero() {
+  const track = useScrub<HTMLElement>();
+
   return (
-    <Box component="section" id="hero" className={classes.hero} aria-labelledby="hero-title">
-      <Container size={1200} px={{ base: "md", sm: "xl" }}>
-        <div className={classes.grid}>
-          <div className={classes.copy}>
-            <Badge
+    <section
+      ref={track}
+      id="hero"
+      data-tone="black"
+      data-mantine-color-scheme="dark"
+      className={classes.track}
+      aria-labelledby="hero-title"
+    >
+      <div className={classes.stage}>
+        <img className={classes.photo} src={MEDIA.lake.src} alt={MEDIA.lake.alt} loading="eager" decoding="async" />
+        <div className={classes.veil} aria-hidden="true" />
+        <div className={classes.night} aria-hidden="true" />
+
+        <div className={classes.copy}>
+          <Title order={1} id="hero-title" className={classes.title}>
+            Drop a folder.
+            <br />
+            <Fade>Lose the black bars.</Fade>
+          </Title>
+          <p className={classes.note}>Removes black bars from photos and videos. Free and private.</p>
+          <div className={classes.pills}>
+            <Pill href="/cropper/" size="lg">
+              Crop in your browser
+            </Pill>
+            <Pill
+              href={RELEASES_URL}
               size="lg"
-              variant="light"
-              leftSection={<SealCheckIcon size={14} weight="fill" />}
-              tt="uppercase"
-              className={classes.eyebrow}
+              variant="soft"
+              className={classes.glass}
+              icon={<WindowsLogoIcon size={16} weight="fill" />}
             >
-              Open source · MIT · Free forever
-            </Badge>
-
-            <Title order={1} id="hero-title" className={classes.title}>
-              Strip letterboxes from 500 files —{" "}
-              <span className={classes.accent}>without cloud uploads, or FFmpeg scripts</span>
-            </Title>
-
-            <Text className={classes.lead} c="dimmed">
-              AutoCrop Pro removes letterboxes, pillarboxes, and black bars from images and videos. Crop a few files in
-              your browser, or download the Windows app for huge offline batches — files never go to our servers.
-            </Text>
-
-            <Group gap="sm" mt="xs">
-              <Button component="a" href="/cropper/" size="lg" rightSection={<ArrowRightIcon size={18} weight="bold" />}>
-                Crop in your browser
-              </Button>
-              <Button
-                component="a"
-                href={RELEASES_URL}
-                size="lg"
-                variant="default"
-                leftSection={<WindowsLogoIcon size={18} weight="fill" />}
-              >
-                Download for Windows
-              </Button>
-            </Group>
-
-            <ul className={classes.checks}>
-              {CHECKS.map(({ icon: Icon, text }) => (
-                <li key={text}>
-                  <ThemeIcon size={26} radius="xl" variant="light">
-                    <Icon size={15} weight="bold" />
-                  </ThemeIcon>
-                  <Text size="sm" c="dimmed">
-                    {text}
-                  </Text>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={classes.visual}>
-            <AppMock />
+              Download for Windows
+            </Pill>
           </div>
         </div>
-      </Container>
-    </Box>
+
+        <div className={classes.window}>
+          <AppWindow />
+        </div>
+      </div>
+    </section>
   );
 }

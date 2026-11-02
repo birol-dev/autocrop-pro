@@ -1,35 +1,218 @@
 .track {
+  --p: 0;
+  /* Three acts on one scrollbar: files land, the marks close in, the bars are cut. */
+  --land: clamp(0, calc(var(--p) / 0.26), 1);
+  --find: clamp(0, calc((var(--p) - 0.36) / 0.2), 1);
+  --crop: clamp(0, calc((var(--p) - 0.68) / 0.2), 1);
+  /* Bar height as a share of the 16:9 frame: 140px of 1080px, from SCENE. */
+  --bar: 12.963%;
+  background: var(--surface);
+  scroll-margin-top: -96px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Static layout (reduced motion, no JS): every step is listed above the finished frame. */
+.stage {
   position: relative;
-  display: grid;
-  gap: var(--mantine-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-block);
+  padding: var(--space-chapter) var(--page-margin);
+  overflow: hidden;
+}
+
+.captions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-block);
   margin: 0;
   padding: 0;
   list-style: none;
-
-  @media (min-width: $mantine-breakpoint-md) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
-.card {
-  position: relative;
-  height: 100%;
-}
-
-.head {
+.caption {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--mantine-spacing-lg);
+  gap: 8px;
+  text-align: center;
 }
 
-.num {
-  font-size: 1.25rem;
-  font-weight: 800;
-  box-shadow: 0 0 0 6px var(--mantine-color-body);
+.count {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.icon {
-  color: var(--mantine-primary-color-filled);
-  opacity: 0.85;
+.name.name {
+  margin: 0;
+  font-size: clamp(2.25rem, 1.5rem + 3vw, 4.5rem);
+  font-weight: 200;
+  line-height: 1.02;
+}
+
+.body {
+  max-width: 44ch;
+  margin: 0;
+  font-size: clamp(15px, 1.3vw, 18px);
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: balance;
+}
+
+.scene {
+  position: relative;
+  width: min(100%, 860px);
+  aspect-ratio: 16 / 9;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+}
+
+.cut {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  clip-path: inset(var(--bar) 0 round var(--radius-card));
+}
+
+.file,
+.mark {
+  display: none;
+}
+
+/* The scrubbed version: captions swap in place above a frame that plays through the steps. */
+:global(:root[data-motion='on']) {
+  .track {
+    height: 240svh;
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 560px;
+    justify-content: center;
+    gap: clamp(20px, 4svh, 48px);
+    padding: 88px var(--page-margin) clamp(20px, 4svh, 48px);
+  }
+
+  .captions {
+    display: grid;
+    width: 100%;
+    gap: 0;
+  }
+
+  .caption {
+    grid-area: 1 / 1;
+    --enter: 0;
+    --leave: 1;
+    opacity: clamp(0, min(var(--enter), var(--leave)), 1);
+    transform: translateY(calc((1 - clamp(0, var(--enter), 1)) * 16px + (clamp(0, var(--leave), 1) - 1) * 16px));
+  }
+
+  .caption[data-step='1'] {
+    --enter: 1;
+    --leave: calc((0.33 - var(--p)) / 0.05);
+  }
+
+  .caption[data-step='2'] {
+    --enter: calc((var(--p) - 0.33) / 0.05);
+    --leave: calc((0.65 - var(--p)) / 0.05);
+  }
+
+  .caption[data-step='3'] {
+    --enter: calc((var(--p) - 0.65) / 0.05);
+    --leave: 1;
+  }
+
+  /* Tall enough to matter, short enough to leave the captions their room. */
+  .scene {
+    flex: 0 1 auto;
+    width: min(100%, 860px, 92svh);
+    /* Grows into the space the cut bars leave behind. */
+    transform: scale(calc(1 + 0.1 * var(--crop)));
+  }
+
+  .cut {
+    clip-path: inset(calc(var(--crop) * var(--bar)) 0 round var(--radius-card));
+  }
+
+  .file {
+    position: absolute;
+    display: block;
+    width: 26%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: var(--radius-inner);
+    box-shadow: var(--shadow-float);
+    opacity: calc(1 - var(--find) * 2);
+  }
+
+  /* They drop in from either side and end up tucked behind the frame. */
+  .fileA {
+    top: 14%;
+    left: 8%;
+    transform: translate(calc((1 - var(--land)) * -46vw), calc((1 - var(--land)) * -24svh)) rotate(calc(-8deg + var(--land) * -2deg));
+  }
+
+  .fileB {
+    top: 14%;
+    right: 8%;
+    transform: translate(calc((1 - var(--land)) * 46vw), calc((1 - var(--land)) * -24svh)) rotate(calc(8deg + var(--land) * 2deg));
+  }
+
+  /* The frame itself lands with the files, then settles flat. */
+  .frame {
+    transform: translateY(calc((1 - var(--land)) * 10svh)) scale(calc(0.86 + var(--land) * 0.14));
+    opacity: clamp(0, calc(var(--land) * 2.5), 1);
+  }
+
+  .mark {
+    position: absolute;
+    display: block;
+    width: clamp(16px, 2.4vw, 28px);
+    height: clamp(16px, 2.4vw, 28px);
+    border: 0 solid #fff;
+    opacity: clamp(0, calc(var(--find) * 4), 1);
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+  }
+
+  /* Start out on the corners of the full frame, then close on the picture. */
+  .markTL,
+  .markTR {
+    top: calc(var(--find) * var(--bar) + 10px);
+    border-top-width: 2px;
+  }
+
+  .markBL,
+  .markBR {
+    bottom: calc(var(--find) * var(--bar) + 10px);
+    border-bottom-width: 2px;
+  }
+
+  .markTL,
+  .markBL {
+    left: 10px;
+    border-left-width: 2px;
+  }
+
+  .markTR,
+  .markBR {
+    right: 10px;
+    border-right-width: 2px;
+  }
 }

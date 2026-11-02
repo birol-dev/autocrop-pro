@@ -34,8 +34,8 @@ AutoCrop Pro never uploads your media to its servers. The website cropper proces
 
 - Website: https://autocrop.birol.tech/
 - Web cropper: https://autocrop.birol.tech/cropper/
-- Download: https://github.com/eact6/autocrop-pro/releases
-- Source: https://github.com/eact6/autocrop-pro
+- Download: https://github.com/birol-dev/autocrop-pro/releases
+- Source: https://github.com/birol-dev/autocrop-pro
 - Pricing: https://autocrop.birol.tech/pricing.md
 - License: MIT (https://opensource.org/licenses/MIT)
 

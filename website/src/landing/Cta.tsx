@@ -1,50 +1,50 @@
-import { Button, Group, Text, Title } from "@mantine/core";
-import { ArrowUpRightIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { Title } from "@mantine/core";
 
+import { useScrub } from "../components/useScrub";
+import { MEDIA } from "../content/media";
 import { RELEASES_URL } from "../content/site";
-import { Section } from "../components/Section";
+import { Chapter, Fade, MediaFrame, Pill } from "../components/Section";
 import classes from "./Cta.module.css";
 
 export default function Cta() {
+  const scene = useScrub<HTMLDivElement>("view");
+
   return (
-    <Section id="download" labelledBy="cta-title" size={1000}>
-      <div className={classes.panel} data-reveal>
-        <Title order={2} id="cta-title" className={classes.title}>
-          Your folder of letterboxed clips
-          <br />
-          shouldn&apos;t own your afternoon
-        </Title>
-        <Text className={classes.lead}>
-          Crop a few files in your browser, or download AutoCrop Pro for Windows. Drop your files. Get back to actual
-          creative work.
-        </Text>
-        <Group justify="center" gap="sm" mt="xl">
-          <Button
-            component="a"
-            href="/cropper/"
-            size="lg"
-            color="white"
-            c="brand.8"
-            rightSection={<ArrowUpRightIcon size={18} weight="bold" />}
-          >
-            Crop in your browser
-          </Button>
-          <Button
-            component="a"
-            href={RELEASES_URL}
-            size="lg"
-            variant="outline"
-            color="white"
-            className={classes.ghost}
-            leftSection={<DownloadSimpleIcon size={18} weight="bold" />}
-          >
-            Download the Windows app
-          </Button>
-        </Group>
-        <Text className={classes.note}>
-          No account. No subscription. MIT license. · Browser cropper on any OS · Native app for Windows 10/11
-        </Text>
+    <Chapter tone="black" id="download" labelledBy="cta-title" className={classes.chapter}>
+      <div ref={scene} className={classes.scene}>
+        <div className={classes.frames} aria-hidden="true">
+          <MediaFrame
+            src={MEDIA.harbor.src}
+            alt=""
+            ratio="3 / 4"
+            tilt={-7}
+            className={`${classes.frame} ${classes.frameA}`}
+          />
+          <MediaFrame src={MEDIA.fields.src} alt="" ratio="3 / 4" className={`${classes.frame} ${classes.frameB}`} />
+          <MediaFrame
+            src={MEDIA.rooftops.src}
+            alt=""
+            ratio="3 / 4"
+            tilt={7}
+            className={`${classes.frame} ${classes.frameC}`}
+          />
+        </div>
+
+        <div className={classes.copy}>
+          <Title order={2} id="cta-title" className={classes.title}>
+            Get your afternoon <Fade>back.</Fade>
+          </Title>
+          <div className={classes.actions}>
+            <Pill href="/cropper/" size="lg">
+              Crop in your browser
+            </Pill>
+            <Pill href={RELEASES_URL} size="lg" variant="soft">
+              Download for Windows
+            </Pill>
+          </div>
+          <p className={classes.note}>Free. No account.</p>
+        </div>
       </div>
-    </Section>
+    </Chapter>
   );
 }

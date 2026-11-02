@@ -1,20 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import {
-    ActionIcon,
-    AppShell,
-    Badge,
-    Center,
-    Group,
-    Image,
-    Progress,
-    SegmentedControl,
-    Stack,
-    Text,
-    Tooltip,
-    useComputedColorScheme,
-    useMantineColorScheme,
-} from "@mantine/core";
-import { FolderOpenIcon, GearSixIcon, MoonIcon, StackIcon, SunIcon } from "@phosphor-icons/react";
+import { Switch, Tooltip, useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
+import { FolderPlusIcon, MoonIcon, PlusIcon, SunIcon, TrashIcon } from "@phosphor-icons/react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { listen } from "@tauri-apps/api/event";
@@ -24,12 +10,13 @@ import { classifyFile } from "@/lib/media";
 import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify";
 
 // Import modular components
-import SettingsSidebar from "@/components/SettingsSidebar";
-import PreviewModal from "@/components/PreviewModal";
-import FileQueue from "@/components/FileQueue";
 import OutputsPanel from "@/components/OutputsPanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import Dropzone from "@/components/Dropzone";
+import CropStage from "@/components/workbench/CropStage";
+import ExportControls, { switchClasses } from "@/components/workbench/ExportControls";
+import QueueRow from "@/components/workbench/QueueRow";
+import { WindowBar, summarize, workbench } from "@/components/workbench/Workbench";
 
 import classes from "./App.module.css";
 
@@ -48,6 +35,7 @@ export type MediaFile = {
     name: string;
     type: "video" | "image";
     crop?: CropArea;
+    error?: string;
     previewUrl?: string;
 };
 
@@ -62,6 +50,8 @@ type ProgressEventPayload = {
     current: number;
     total: number;
     message: string;
+    path: string;
+    error: string | null;
 };
 
 export type OutputFile = {
@@ -73,10 +63,16 @@ export type OutputFile = {
 
 type Tab = "queue" | "outputs" | "settings";
 
-const NAV_ITEMS: { value: Tab; label: string; icon: React.ReactNode }[] = [
-    { value: "queue", label: "Queue", icon: <StackIcon size={16} weight="bold" /> },
-    { value: "outputs", label: "Outputs", icon: <FolderOpenIcon size={16} weight="bold" /> },
-    { value: "settings", label: "Settings", icon: <GearSixIcon size={16} weight="bold" /> },
+const FORMATS = [
+    { value: "Same as source", label: "Same as source" },
+    { value: "png", label: "PNG (lossless)" },
+    { value: "jpg", label: "JPEG (smaller)" },
+    { value: "webp", label: "WebP" },
+];
+
+const MEDIA_EXTENSIONS = [
+    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv',
+    'jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'gif'
 ];
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -90,14 +86,11 @@ export default function App() {
 
     // Application state
     const [files, setFiles] = useState<MediaFile[]>([]);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [progressMsg, setProgressMsg] = useState("");
-
-    // Preview modal state
-    const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
-    const [detectingCrop, setDetectingCrop] = useState(false);
-    const [detectedCrop, setDetectedCrop] = useState<CropArea | null>(null);
+    const [detecting, setDetecting] = useState(false);
 
     // Options
     const [options, setOptions] = useState<ProcessOptions>({
@@ -109,27 +102,42 @@ export default function App() {
 
     const [isDragHovering, setIsDragHovering] = useState(false);
     const toleranceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Bumped whenever a detection is superseded (new request, preview closed) so stale results are dropped.
+    // Bumped whenever a detection is superseded (new request, other file selected) so stale results are dropped.
     const detectGenRef = useRef(0);
     const toleranceReadyRef = useRef(false);
 
+    const selected = files.find(f => f.id === selectedId) ?? files[0] ?? null;
+
     // ── File Management ─────────────────────────────────────────────────────
 
-    const addFilesFromPaths = useCallback((paths: string[]) => {
+    /** Takes files and folders alike: folders are walked by the backend. */
+    const addFilesFromPaths = useCallback(async (paths: string[]) => {
+        let found: string[];
+        try {
+            found = await invoke<string[]>("expand_paths", { paths });
+        } catch (err) {
+            notifyError(`Could not read that folder: ${String(err)}`);
+            return;
+        }
+
         const newFiles: MediaFile[] = [];
-        for (const path of paths) {
+        for (const path of found) {
             const fileType = classifyFile(path);
             if (!fileType) continue;
             const name = path.split('\\').pop()?.split('/').pop() || path;
             const previewUrl = convertFileSrc(path);
             newFiles.push({ id: crypto.randomUUID(), path, name, type: fileType, previewUrl });
         }
-        if (newFiles.length > 0) {
-            setFiles(prev => {
-                const existingPaths = new Set(prev.map(f => f.path));
-                return [...prev, ...newFiles.filter(f => !existingPaths.has(f.path))];
-            });
+
+        if (newFiles.length === 0) {
+            notifyWarning("No images or videos in there.");
+            return;
         }
+        setTab("queue");
+        setFiles(prev => {
+            const existingPaths = new Set(prev.map(f => f.path));
+            return [...prev, ...newFiles.filter(f => !existingPaths.has(f.path))];
+        });
     }, []);
 
     const removeFile = useCallback((id: string) => {
@@ -146,9 +154,10 @@ export default function App() {
 
     useEffect(() => {
         let unlisten: (() => void) | undefined;
+        let cancelled = false;
         (async () => {
             try {
-                unlisten = await getCurrentWebview().onDragDropEvent((event) => {
+                const stop = await getCurrentWebview().onDragDropEvent((event) => {
                     if (isProcessing) return;
                     switch (event.payload.type) {
                         case 'over': case 'enter': setIsDragHovering(true); break;
@@ -159,32 +168,35 @@ export default function App() {
                             break;
                     }
                 });
+                if (cancelled) stop();
+                else unlisten = stop;
             } catch (err) { console.error("Drag-drop listener failed:", err); }
         })();
-        return () => { unlisten?.(); };
+        return () => { cancelled = true; unlisten?.(); };
     }, [isProcessing, addFilesFromPaths]);
 
-    // ── HTML Click-to-Browse (via Tauri native dialog) ─────────────────────
+    // ── Native Pickers ──────────────────────────────────────────────────────
 
-    const handleDropzoneClick = useCallback(async () => {
+    const browseFiles = useCallback(async () => {
         if (isProcessing) return;
         try {
-            const selected = await openDialog({
+            const selection = await openDialog({
                 multiple: true,
-                filters: [{
-                    name: 'Media Files',
-                    extensions: [
-                        'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv',
-                        'jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'gif'
-                    ]
-                }]
+                filters: [{ name: 'Media Files', extensions: MEDIA_EXTENSIONS }]
             });
-            if (selected) {
-                const paths = Array.isArray(selected) ? selected : [selected];
-                addFilesFromPaths(paths);
-            }
+            if (selection) addFilesFromPaths(Array.isArray(selection) ? selection : [selection]);
         } catch (err) {
             notifyError(`Failed to open file picker: ${String(err)}`);
+        }
+    }, [isProcessing, addFilesFromPaths]);
+
+    const browseFolder = useCallback(async () => {
+        if (isProcessing) return;
+        try {
+            const selection = await openDialog({ directory: true, multiple: true, title: "Add a folder" });
+            if (selection) addFilesFromPaths(Array.isArray(selection) ? selection : [selection]);
+        } catch (err) {
+            notifyError(`Failed to open folder picker: ${String(err)}`);
         }
     }, [isProcessing, addFilesFromPaths]);
 
@@ -198,58 +210,39 @@ export default function App() {
         }
         if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current);
         toleranceTimerRef.current = setTimeout(() => {
-            setFiles(prev => prev.map(f => ({ ...f, crop: undefined })));
-            if (previewFile) {
-                const gen = ++detectGenRef.current;
-                setDetectingCrop(true);
-                invoke<CropArea>("detect_crop_areas", { filePath: previewFile.path, tolerance: options.tolerance })
-                    .then(crop => {
-                        if (gen !== detectGenRef.current) return;
-                        setDetectedCrop(crop);
-                        setFiles(prev => prev.map(f => f.id === previewFile.id ? { ...f, crop } : f));
-                    })
-                    .catch(err => {
-                        if (gen !== detectGenRef.current) return;
-                        notifyError(`Detection failed: ${String(err)}`);
-                    })
-                    .finally(() => {
-                        if (gen === detectGenRef.current) setDetectingCrop(false);
-                    });
-            }
+            setFiles(prev => prev.map(f => ({ ...f, crop: undefined, error: undefined })));
         }, 300);
         return () => { if (toleranceTimerRef.current) clearTimeout(toleranceTimerRef.current); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [options.tolerance]);
 
-    // ── Preview ─────────────────────────────────────────────────────────────
+    // ── Detection for the Selected File ─────────────────────────────────────
 
-    const handlePreview = async (file: MediaFile) => {
-        if (isProcessing) return;
-        setPreviewFile(file);
-        setDetectedCrop(file.crop || null);
-        if (!file.crop && file.path) {
-            const gen = ++detectGenRef.current;
-            setDetectingCrop(true);
-            try {
-                const crop = await invoke<CropArea>("detect_crop_areas", { filePath: file.path, tolerance: options.tolerance });
-                if (gen !== detectGenRef.current) return;
-                setDetectedCrop(crop);
-                setFiles(prev => prev.map(f => f.id === file.id ? { ...f, crop } : f));
-            } catch (error) {
-                if (gen !== detectGenRef.current) return;
-                notifyError(`Detection failed: ${String(error)}`);
-            } finally {
-                if (gen === detectGenRef.current) setDetectingCrop(false);
-            }
-        }
-    };
+    const selectedKey = selected && !selected.crop && !selected.error && !isProcessing ? selected.id : null;
+    const selectedPath = selected?.path;
 
-    const closePreview = useCallback(() => {
+    useEffect(() => {
         detectGenRef.current += 1;
-        setPreviewFile(null);
-        setDetectedCrop(null);
-        setDetectingCrop(false);
-    }, []);
+        if (!selectedKey || !selectedPath) {
+            setDetecting(false);
+            return;
+        }
+        const gen = detectGenRef.current;
+        setDetecting(true);
+        invoke<CropArea>("detect_crop_areas", { filePath: selectedPath, tolerance: options.tolerance })
+            .then(crop => {
+                if (gen !== detectGenRef.current) return;
+                setFiles(prev => prev.map(f => f.id === selectedKey ? { ...f, crop } : f));
+            })
+            .catch(err => {
+                if (gen !== detectGenRef.current) return;
+                setFiles(prev => prev.map(f => f.id === selectedKey ? { ...f, error: String(err) } : f));
+            })
+            .finally(() => {
+                if (gen === detectGenRef.current) setDetecting(false);
+            });
+        // The tolerance effect clears `crop`, which changes selectedKey, so it isn't a dependency here.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedKey, selectedPath]);
 
     // ── Process All ─────────────────────────────────────────────────────────
 
@@ -284,22 +277,31 @@ export default function App() {
 
         setProgressMsg("Processing files...");
         let unlisten: (() => void) | undefined;
+        const finished = new Set<string>();
+        const failed = new Map<string, string>();
         try {
             unlisten = await listen<ProgressEventPayload>("crop-progress", (event) => {
-                const { current, total, message } = event.payload;
+                const { current, total, message, path, error } = event.payload;
                 const pct = total > 0 ? (current / total) * 100 : 0;
                 setProgress(Math.min(pct, 100));
                 setProgressMsg(message);
+                if (error) failed.set(path, error);
+                else finished.add(path);
             });
             await invoke("process_files", { items: itemsToProcess, options });
             setFiles([]);
             // Switch to outputs tab and refresh
             setTab("outputs");
-            setOutputsRefreshTick(t => t + 1);
             notifySuccess("Processing complete");
         } catch (error) {
+            // Only the failures stay queued: running the rest again would make duplicates,
+            // and with Delete originals on, their sources are already gone.
+            setFiles(prev => prev
+                .filter(f => !finished.has(f.path))
+                .map(f => ({ ...f, error: failed.get(f.path) ?? f.error })));
             notifyError(`Processing failed: ${String(error)}`);
         } finally {
+            setOutputsRefreshTick(t => t + 1);
             setIsProcessing(false);
             setProgress(0);
             setProgressMsg("");
@@ -312,93 +314,139 @@ export default function App() {
     const hasFiles = files.length > 0;
 
     return (
-        <AppShell
-            header={{ height: 60 }}
-            aside={{
-                width: 330,
-                breakpoint: 0,
-                // Export settings only matter while building the queue.
-                collapsed: { desktop: tab !== "queue", mobile: tab !== "queue" },
-            }}
-            padding="lg"
-        >
-            <AppShell.Header data-tauri-drag-region>
-                <div className={classes.header}>
-                    <Group gap="sm" wrap="nowrap" className={classes.brand}>
-                        <Image src="/logo.png" alt="" w={32} h={32} radius="md" />
-                        <Text fw={700} fz="lg" lts="-0.01em" visibleFrom="xs">
-                            AutoCrop Pro
-                        </Text>
-                    </Group>
+        <div className={`${workbench.window} ${classes.shell}`}>
+            <WindowBar
+                tabs={[
+                    { value: "queue", label: "Queue", count: files.length },
+                    { value: "outputs", label: "Outputs" },
+                    { value: "settings", label: "Settings" },
+                ]}
+                active={tab}
+                onChange={setTab}
+                progress={isProcessing ? progress / 100 : null}
+                brand={
+                    <div className={classes.brand}>
+                        <img src="/logo.png" alt="" className={classes.logo} />
+                        <span className={classes.appName}>AutoCrop Pro</span>
+                    </div>
+                }
+            >
+                <Tooltip label={computedScheme === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
+                    <button
+                        type="button"
+                        className={workbench.iconButton}
+                        aria-label="Toggle colour theme"
+                        onClick={() => setColorScheme(computedScheme === "dark" ? "light" : "dark")}
+                    >
+                        {computedScheme === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
+                    </button>
+                </Tooltip>
+            </WindowBar>
 
-                    <SegmentedControl
-                        value={tab}
-                        onChange={(v) => setTab(v as Tab)}
-                        radius="md"
-                        size="md"
-                        data={NAV_ITEMS.map((t) => ({
-                            value: t.value,
-                            label: (
-                                <Center inline style={{ gap: 8 }}>
-                                    {t.icon}
-                                    <span>{t.label}</span>
-                                    {t.value === "queue" && hasFiles && (
-                                        <Badge size="sm" circle={files.length < 10} px={files.length < 10 ? 0 : 6}>
-                                            {files.length}
-                                        </Badge>
-                                    )}
-                                </Center>
-                            ),
-                        }))}
-                    />
-
-                    <Group justify="flex-end">
-                        <Tooltip label={computedScheme === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
-                            <ActionIcon
-                                variant="default"
-                                size={36}
-                                aria-label="Toggle colour theme"
-                                onClick={() => setColorScheme(computedScheme === "dark" ? "light" : "dark")}
-                            >
-                                {computedScheme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
-                            </ActionIcon>
-                        </Tooltip>
-                    </Group>
-                </div>
-
-                {isProcessing && (
-                    <Progress
-                        value={progress}
-                        size={3}
-                        radius={0}
-                        animated
-                        className={classes.globalProgress}
-                        aria-label="Processing progress"
-                    />
-                )}
-            </AppShell.Header>
-
-            <AppShell.Main className={classes.main}>
+            <main className={classes.main}>
                 {/* ── Queue Tab ─────────────────────────────────────────── */}
-                {tab === "queue" && (
-                    <Stack gap="xl">
-                        <Dropzone
-                            isDragHovering={isDragHovering}
-                            isProcessing={isProcessing}
-                            compact={hasFiles}
-                            onBrowse={handleDropzoneClick}
-                        />
+                {tab === "queue" && !hasFiles && (
+                    <Dropzone isDragHovering={isDragHovering} onBrowseFiles={browseFiles} onBrowseFolder={browseFolder} />
+                )}
 
-                        {hasFiles && (
-                            <FileQueue
-                                files={files}
-                                disabled={isProcessing}
-                                onPreviewFile={handlePreview}
-                                onRemoveFile={removeFile}
-                                onClear={clearFiles}
+                {tab === "queue" && hasFiles && selected && (
+                    <div className={workbench.body}>
+                        <aside className={workbench.side}>
+                            <div className={workbench.sideHead}>
+                                <span className={workbench.sideTitle}>{summarize(files)}</span>
+                                <div className={workbench.sideActions}>
+                                    <Tooltip label="Add files">
+                                        <button type="button" className={workbench.iconButton} aria-label="Add files" disabled={isProcessing} onClick={browseFiles}>
+                                            <PlusIcon size={16} />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip label="Add a folder">
+                                        <button type="button" className={workbench.iconButton} aria-label="Add a folder" disabled={isProcessing} onClick={browseFolder}>
+                                            <FolderPlusIcon size={16} />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip label="Clear the queue">
+                                        <button type="button" className={workbench.iconButton} aria-label="Clear the queue" disabled={isProcessing} onClick={clearFiles}>
+                                            <TrashIcon size={16} />
+                                        </button>
+                                    </Tooltip>
+                                </div>
+                            </div>
+                            <ul className={workbench.rows}>
+                                {files.map((f) => {
+                                    const ext = f.name.split(".").pop()?.toUpperCase();
+                                    const isCurrent = f.id === selected.id;
+                                    return (
+                                        <QueueRow
+                                            key={f.id}
+                                            name={f.name}
+                                            meta={f.crop && f.crop.w > 0 ? `${f.crop.w} × ${f.crop.h}` : `${f.type === "video" ? "Video" : "Image"}${ext ? ` · ${ext}` : ""}`}
+                                            src={f.previewUrl}
+                                            type={f.type}
+                                            active={isCurrent}
+                                            state={f.error ? "error" : f.crop ? "ready" : isCurrent && detecting ? "busy" : "idle"}
+                                            error={f.error}
+                                            disabled={isProcessing}
+                                            onSelect={() => setSelectedId(f.id)}
+                                            onRemove={() => removeFile(f.id)}
+                                        />
+                                    );
+                                })}
+                            </ul>
+                        </aside>
+
+                        <section className={workbench.detail} aria-label="Preview and export">
+                            <CropStage
+                                key={selected.id}
+                                src={selected.previewUrl}
+                                type={selected.type}
+                                name={selected.name}
+                                crop={selected.crop ?? null}
+                                pending={!selected.crop && !selected.error}
+                                padding={options.padding ? 10 : 0}
+                                error={selected.error}
                             />
-                        )}
-                    </Stack>
+                            <ExportControls
+                                tolerance={options.tolerance}
+                                onTolerance={(tolerance) => setOptions((o) => ({ ...o, tolerance }))}
+                                format={options.output_format}
+                                formats={FORMATS}
+                                onFormat={(output_format) => setOptions((o) => ({ ...o, output_format }))}
+                                padding={options.padding}
+                                onPadding={(padding) => setOptions((o) => ({ ...o, padding }))}
+                                extra={
+                                    <Switch
+                                        label="Delete originals"
+                                        withThumbIndicator={false}
+                                        color="var(--ink)"
+                                        classNames={{
+                                            ...switchClasses,
+                                            label: options.delete_original ? workbench.danger : switchClasses.label,
+                                        }}
+                                        checked={options.delete_original}
+                                        disabled={isProcessing}
+                                        onChange={(e) => {
+                                            const delete_original = e.currentTarget.checked;
+                                            if (
+                                                delete_original &&
+                                                !window.confirm(
+                                                    "Delete originals permanently removes source files after a successful crop. Continue?",
+                                                )
+                                            ) {
+                                                return;
+                                            }
+                                            setOptions((o) => ({ ...o, delete_original }));
+                                        }}
+                                    />
+                                }
+                                fileCount={files.length}
+                                busy={isProcessing}
+                                status={isProcessing ? progressMsg : undefined}
+                                note="Applied to every file. Videos keep their format; GIFs become a still PNG."
+                                onProcess={handleProcessAll}
+                            />
+                        </section>
+                    </div>
                 )}
 
                 {/* ── Outputs Tab ───────────────────────────────────────── */}
@@ -408,28 +456,13 @@ export default function App() {
 
                 {/* ── Settings Tab ──────────────────────────────────────── */}
                 {tab === "settings" && <SettingsPanel />}
-            </AppShell.Main>
+            </main>
 
-            <AppShell.Aside>
-                <SettingsSidebar
-                    options={options}
-                    setOptions={setOptions}
-                    hasFiles={hasFiles}
-                    isProcessing={isProcessing}
-                    progress={progress}
-                    progressMsg={progressMsg}
-                    filesCount={files.length}
-                    onProcessAll={handleProcessAll}
-                />
-            </AppShell.Aside>
-
-            {/* Preview Modal */}
-            <PreviewModal
-                previewFile={previewFile}
-                closePreview={closePreview}
-                detectingCrop={detectingCrop}
-                detectedCrop={detectedCrop}
-            />
-        </AppShell>
+            {isDragHovering && hasFiles && (
+                <div className={classes.dropVeil} aria-hidden="true">
+                    Drop to add to the queue
+                </div>
+            )}
+        </div>
     );
 }

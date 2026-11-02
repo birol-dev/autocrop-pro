@@ -26,7 +26,7 @@ export function displayedCrop(item: Item, options: Options): CropArea | null {
 const notify = (message: string, error = false) =>
   notifications.show({
     message,
-    color: error ? "red" : "brand",
+    color: error ? "red" : "gray",
     autoClose: error ? 7000 : 5000,
     withBorder: true,
   });
@@ -95,11 +95,12 @@ export function useCropper() {
 
     const existing = new Set(itemsRef.current.map((f) => `${f.name}:${f.file.size}:${f.file.lastModified}`));
     const fresh: Item[] = [];
+    const skipped: string[] = [];
 
     for (const file of incoming) {
       const type = classifyFile(file.name) as "image" | "video" | null;
       if (!type) {
-        notify(`Skipped ${file.name} — unsupported format.`, true);
+        skipped.push(file.name);
         continue;
       }
       const key = `${file.name}:${file.size}:${file.lastModified}`;
@@ -121,10 +122,15 @@ export function useCropper() {
         error: null,
         resultBlob: null,
         resultName: null,
+        resultDims: null,
         resultKey: null,
         risky: isRiskyWebFormat(file.name),
         oversized: type === "video" && file.size >= VIDEO_WARN_BYTES,
       });
+    }
+    // One note, however many: a dropped folder is usually full of files that aren't media.
+    if (skipped.length) {
+      notify(skipped.length === 1 ? `Skipped ${skipped[0]}: unsupported format.` : `Skipped ${skipped.length} files in unsupported formats.`);
     }
     if (!fresh.length) return;
 
@@ -245,27 +251,29 @@ export function useCropper() {
   const setPadding = useCallback((padding: boolean) => setOptions({ padding }), [setOptions]);
   const setOutputFormat = useCallback((outputFormat: OutputFormat) => setOptions({ outputFormat }), [setOptions]);
 
-  // Keep the preview's crop fresh: detect on open, and re-detect (debounced) when the tolerance moves.
+  // The file on the stage: the one picked in the queue, or else the first.
+  const activeId = items.some((f) => f.id === previewId) ? previewId : (items[0]?.id ?? null);
+
+  // Keep its crop fresh: detect on selection, and re-detect (debounced) when the tolerance moves.
   const lastPreview = useRef<string | null>(null);
   useEffect(() => {
-    if (!previewId) {
+    if (!activeId) {
       lastPreview.current = null;
       return;
     }
-    const delay = lastPreview.current === previewId ? 300 : 0;
-    lastPreview.current = previewId;
+    const delay = lastPreview.current === activeId ? 300 : 0;
+    lastPreview.current = activeId;
     const timer = setTimeout(() => {
       if (processingRef.current) return;
-      ensureCrop(previewId).catch(() => {});
+      ensureCrop(activeId).catch(() => {});
     }, delay);
     return () => clearTimeout(timer);
-  }, [previewId, options.tolerance, ensureCrop]);
+  }, [activeId, options.tolerance, ensureCrop]);
 
   const processAll = useCallback(async () => {
     if (processingRef.current || !itemsRef.current.length) return;
     processingRef.current = true;
     setProcessing(true);
-    setPreviewId(null);
 
     const ids = itemsRef.current.map((f) => f.id);
     const total = ids.length;
@@ -312,10 +320,13 @@ export function useCropper() {
           blob = result.blob;
           ext = result.ext;
         }
+        const written = displayedCrop(item, optionsRef.current) ?? crop;
+        const dims = `${written.w} × ${written.h}`;
         patch(id, {
           status: "done",
           resultBlob: blob,
           resultName: `${fileStem(item.name)}_cropped.${ext}`,
+          resultDims: dims,
           resultKey: optionsKey(optionsRef.current),
         });
       } catch (err) {
@@ -339,7 +350,7 @@ export function useCropper() {
         true,
       );
     } else {
-      notify("Done. Download from Results — files never left this tab.");
+      notify("Done. Your files are in Results.");
     }
   }, [ensureCrop, patch]);
 
@@ -370,7 +381,7 @@ export function useCropper() {
     setTab,
     processing,
     progress,
-    previewId,
+    activeId,
     setPreviewId,
     loadingSamples,
     addFiles,

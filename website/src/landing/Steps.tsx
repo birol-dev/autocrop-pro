@@ -1,68 +1,48 @@
-import { Anchor, Card, Code, Text, ThemeIcon, Title } from "@mantine/core";
-import { DownloadSimpleIcon, SlidersHorizontalIcon, UploadSimpleIcon } from "@phosphor-icons/react";
-import type { Icon } from "@phosphor-icons/react";
+import { Title } from "@mantine/core";
 
-import { Section, SectionHeader } from "../components/Section";
+import Scene from "../components/Scene";
+import { useScrub } from "../components/useScrub";
+import { MEDIA } from "../content/media";
+import { STEPS } from "../content/steps";
 import classes from "./Steps.module.css";
 
-const ICONS: Icon[] = [UploadSimpleIcon, SlidersHorizontalIcon, DownloadSimpleIcon];
-
+/** One pinned frame acts out the workflow: files land, the bars are found, the bars are cut. */
 export default function Steps() {
-  return (
-    <Section id="how-it-works" labelledBy="how-title">
-      <SectionHeader
-        eyebrow="Workflow"
-        titleId="how-title"
-        title="Three steps. No learning curve."
-        lead={
-          <>
-            Same flow in the{" "}
-            <Anchor href="/cropper/" inherit fw={600}>
-              browser cropper
-            </Anchor>{" "}
-            or the Windows app. The app is built for hundreds of files at once.
-          </>
-        }
-      />
+  const track = useScrub<HTMLElement>();
 
-      <ol className={classes.track}>
-        <li>
-          <Step n={1} title="Drop your files">
-            Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or any supported format onto the app. Hundreds at once.
-          </Step>
-        </li>
-        <li>
-          <Step n={2} title="Preview & tune">
-            Click any file to see the crop overlay. Adjust tolerance until borders snap perfectly — without touching
-            pixel math.
-          </Step>
-        </li>
-        <li>
-          <Step n={3} title="Batch export">
-            Hit process. Cropped files land in <Code>Documents/AutoCrop_Output/</Code>. Originals stay untouched.
-          </Step>
-        </li>
-      </ol>
-    </Section>
-  );
-}
-
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  const StepIcon = ICONS[n - 1];
   return (
-    <Card withBorder padding="xl" className={classes.card} data-reveal>
-      <div className={classes.head}>
-        <ThemeIcon size={52} radius="xl" variant="filled" className={classes.num}>
-          <span>{n}</span>
-        </ThemeIcon>
-        <StepIcon size={30} weight="duotone" className={classes.icon} aria-hidden="true" />
+    <section ref={track} id="how-it-works" data-tone="paper" className={classes.track} aria-labelledby="how-title">
+      <div className={classes.stage}>
+        <h2 id="how-title" className={classes.srOnly}>
+          How it works
+        </h2>
+
+        <ol className={classes.captions}>
+          {STEPS.map((step, i) => (
+            <li key={step.name} className={classes.caption} data-step={i + 1}>
+              <span className={classes.count}>{i + 1} of {STEPS.length}</span>
+              <Title order={3} className={classes.name}>
+                {step.name}
+              </Title>
+              <p className={classes.body}>{step.body}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className={classes.scene} aria-hidden="true">
+          <img className={`${classes.file} ${classes.fileA}`} src={MEDIA.harbor.src} alt="" loading="lazy" decoding="async" />
+          <img className={`${classes.file} ${classes.fileB}`} src={MEDIA.rooftops.src} alt="" loading="lazy" decoding="async" />
+          <div className={classes.frame}>
+            <div className={classes.cut}>
+              <Scene mode="full" />
+            </div>
+            <span className={`${classes.mark} ${classes.markTL}`} />
+            <span className={`${classes.mark} ${classes.markTR}`} />
+            <span className={`${classes.mark} ${classes.markBL}`} />
+            <span className={`${classes.mark} ${classes.markBR}`} />
+          </div>
+        </div>
       </div>
-      <Title order={3} mb={6}>
-        {title}
-      </Title>
-      <Text c="dimmed" size="sm" lh={1.65}>
-        {children}
-      </Text>
-    </Card>
+    </section>
   );
 }

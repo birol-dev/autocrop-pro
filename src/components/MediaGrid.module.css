@@ -1,48 +1,122 @@
-/* Shared by the queue and the outputs gallery. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px 24px;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: var(--mantine-spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.card {
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-inner);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  transition:
-    transform 150ms ease,
-    box-shadow 150ms ease,
-    border-color 150ms ease;
 }
 
-.card:hover,
-.card:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: var(--mantine-shadow-md);
-  border-color: var(--mantine-primary-color-filled);
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-inner);
+  background: #000;
 }
 
-.card:focus-visible {
-  outline: 2px solid var(--mantine-primary-color-filled);
-  outline-offset: 2px;
+.name {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Corner action that fades in when the card is hovered / focused. */
-.action {
-  position: absolute;
-  top: var(--mantine-spacing-xs);
-  right: var(--mantine-spacing-xs);
-  opacity: 0;
-  pointer-events: auto;
-  transition: opacity 150ms ease;
+.meta {
+  font-size: 12px;
+  color: var(--muted);
 }
 
-.card:hover .action,
-.card:focus-within .action,
-.action:focus-visible {
-  opacity: 1;
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
-.badge {
-  position: absolute;
-  left: var(--mantine-spacing-xs);
-  bottom: var(--mantine-spacing-xs);
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin: 16px;
+  padding: 32px 24px;
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+}
+
+.fade {
+  color: var(--fade);
+}
+
+.lightboxContent {
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.lightboxHeader {
+  background: var(--surface);
+}
+
+.lightboxTitle {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightboxStage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 13px;
+  background: #000;
+}
+
+.lightboxMedia {
+  display: block;
+  max-width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+}
+
+.lightboxFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
 }

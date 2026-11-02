@@ -1,0 +1,140 @@
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The stage measures itself against this box, so any picture fits without scrolling. */
+.viewport {
+  container-type: size;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border-radius: 13px;
+  background: #000;
+}
+
+.stage {
+  position: relative;
+  width: min(100cqw, 100cqh * var(--ar));
+  aspect-ratio: var(--ar);
+  overflow: hidden;
+  border-radius: 13px;
+  background: #000;
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The huge shadow dims whatever falls outside the crop; the stage clips it to the picture. */
+.crop {
+  position: absolute;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+  transition:
+    top 280ms var(--ease-out),
+    left 280ms var(--ease-out),
+    width 280ms var(--ease-out),
+    height 280ms var(--ease-out);
+}
+
+.mark {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid rgba(255, 255, 255, 0.95);
+}
+
+.mark[data-pos='tl'] {
+  top: 10px;
+  left: 10px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.mark[data-pos='tr'] {
+  top: 10px;
+  right: 10px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.mark[data-pos='bl'] {
+  bottom: 10px;
+  left: 10px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.mark[data-pos='br'] {
+  right: 10px;
+  bottom: 10px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.failed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+.failed p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.caption {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dims {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrow {
+  color: var(--fade);
+}
+
+.after {
+  color: var(--ink);
+}
+
+.outcome[data-error] {
+  color: var(--mantine-color-red-5);
+}
+
+@container workbench (max-width: 760px) {
+  .root {
+    flex: none;
+  }
+
+  .viewport {
+    flex: none;
+    height: min(62cqw, 420px);
+    min-height: 0;
+  }
+}

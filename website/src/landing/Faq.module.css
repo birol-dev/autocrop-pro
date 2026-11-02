@@ -1,37 +1,74 @@
-.item {
-  border: 1px solid var(--mantine-color-default-border);
-  background-color: var(--mantine-color-body);
-  transition: border-color 150ms ease;
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-block);
+}
 
-  &[data-active] {
-    border-color: alpha(var(--mantine-color-brand-5), 0.5);
-    background-color: var(--mantine-color-body);
+.title {
+  margin: 0;
+  text-align: center;
+}
+
+/* The column is centered; answers stay left-aligned because they run to several lines. */
+.list {
+  width: 100%;
+  max-width: 720px;
+}
+
+.item.item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.item.item + .item.item {
+  border-top: 1px solid var(--hairline);
+}
+
+.control.control {
+  padding-inline: 0;
+}
+
+@media (hover: hover) {
+  .control.control:hover {
+    background: transparent;
   }
 }
 
-.control {
-  padding-block: 16px;
+.label.label {
+  padding-block: 18px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.125rem, 1rem + 0.35vw, 1.25rem);
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 /* The control wraps a heading so FAQ questions stay in the document outline. */
 .q {
   margin: 0;
-  font-size: var(--mantine-font-size-md);
-  font-weight: 650;
-  line-height: 1.4;
+  font-family: var(--font-serif);
+  font-size: clamp(1.125rem, 1rem + 0.35vw, 1.25rem);
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .chevron {
-  color: var(--mantine-color-dimmed);
-
-  &[data-rotate] {
-    transform: rotate(135deg);
-    color: var(--mantine-primary-color-filled);
-  }
+  color: var(--muted);
+  transition:
+    transform 200ms var(--ease-out),
+    color 200ms var(--ease-out);
 }
 
-.content {
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-sm);
-  line-height: 1.7;
+.chevron[data-rotate] {
+  transform: rotate(45deg);
+  color: var(--ink);
+}
+
+.content.content {
+  max-width: 60ch;
+  padding: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted);
 }

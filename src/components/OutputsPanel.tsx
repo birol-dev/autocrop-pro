@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { ActionIcon, Button, Card, Group, Modal, Paper, Skeleton, Stack, Text, ThemeIcon, Tooltip } from "@mantine/core";
-import {
-    ArrowRightIcon,
-    ArrowsClockwiseIcon,
-    ClockIcon,
-    FolderOpenIcon,
-    ImagesIcon,
-} from "@phosphor-icons/react";
+import { Button, Modal, Skeleton, Title } from "@mantine/core";
+import { ArrowsClockwiseIcon, FolderOpenIcon } from "@phosphor-icons/react";
 import { OutputFile } from "@/App";
 import { notifyError } from "@/lib/notify";
 import MediaThumb from "./MediaThumb";
@@ -67,32 +61,41 @@ export default function OutputsPanel({ refreshTick, onGoToQueue }: OutputsPanelP
         }
     };
 
+    // Empty state
+    if (loaded && files.length === 0) {
+        return (
+            <div className={classes.empty}>
+                <Title order={1} className={classes.emptyTitle}>
+                    Nothing here yet.
+                    <br />
+                    <span className={classes.fade}>Cropped files land here.</span>
+                </Title>
+                <Button size="md" onClick={onGoToQueue}>
+                    Go to the queue
+                </Button>
+            </div>
+        );
+    }
+
     return (
-        <Stack gap="md">
+        <div className={classes.page}>
             <PageHeader
                 title="Outputs"
                 count={files.length}
-                description="Newest first · click to preview, double-click to reveal in Explorer"
                 actions={
                     <>
-                        <Button
-                            variant="default"
-                            leftSection={<FolderOpenIcon size={16} />}
-                            onClick={handleOpenFolder}
-                        >
+                        <Button variant="default" leftSection={<FolderOpenIcon size={16} />} onClick={handleOpenFolder}>
                             Open folder
                         </Button>
-                        <Tooltip label="Refresh">
-                            <ActionIcon
-                                variant="default"
-                                size={36}
-                                onClick={load}
-                                loading={loading && loaded}
-                                aria-label="Refresh outputs"
-                            >
-                                <ArrowsClockwiseIcon size={16} />
-                            </ActionIcon>
-                        </Tooltip>
+                        <Button
+                            variant="subtle"
+                            color="gray"
+                            leftSection={<ArrowsClockwiseIcon size={16} />}
+                            onClick={load}
+                            loading={loading && loaded}
+                        >
+                            Refresh
+                        </Button>
                     </>
                 }
             />
@@ -101,104 +104,42 @@ export default function OutputsPanel({ refreshTick, onGoToQueue }: OutputsPanelP
             {!loaded && (
                 <div className={classes.grid}>
                     {Array.from({ length: 8 }, (_, i) => (
-                        <Skeleton key={i} height={170} radius="lg" />
+                        <Skeleton key={i} height={150} radius={10} />
                     ))}
                 </div>
-            )}
-
-            {/* Empty state */}
-            {loaded && files.length === 0 && (
-                <Paper
-                    withBorder
-                    p={48}
-                    style={{ borderStyle: "dashed", borderWidth: 2 }}
-                >
-                    <Stack align="center" gap="sm">
-                        <ThemeIcon size={64} radius="xl" variant="light" color="gray">
-                            <ImagesIcon size={32} weight="duotone" />
-                        </ThemeIcon>
-                        <Text fw={650} size="lg" mt="xs">
-                            No outputs yet
-                        </Text>
-                        <Text c="dimmed" size="sm" ta="center" maw={360}>
-                            Cropped files land here once you process your queue.
-                        </Text>
-                        <Button
-                            variant="light"
-                            mt="xs"
-                            rightSection={<ArrowRightIcon size={16} weight="bold" />}
-                            onClick={onGoToQueue}
-                        >
-                            Go to queue
-                        </Button>
-                    </Stack>
-                </Paper>
             )}
 
             {/* Grid */}
-            {loaded && files.length > 0 && (
-                <div className={classes.grid}>
+            {loaded && (
+                <ul className={classes.grid}>
                     {files.map((file) => (
-                        <Card
-                            key={file.path}
-                            withBorder
-                            padding={0}
-                            className={classes.card}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Preview ${file.name}`}
-                            title="Click to preview · Double-click to reveal in Explorer"
-                            onClick={() => setLightbox(file)}
-                            onDoubleClick={() => handleReveal(file)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setLightbox(file);
-                                }
-                            }}
-                        >
-                            <Card.Section>
-                                <MediaThumb
-                                    src={convertFileSrc(file.path)}
-                                    type={file.file_type === "video" ? "video" : "image"}
-                                    name={file.name}
-                                    ratio={4 / 3}
-                                    lazy
-                                >
-                                    <Tooltip label="Reveal in Explorer">
-                                        <ActionIcon
-                                            className={classes.action}
-                                            variant="filled"
-                                            color="dark"
-                                            size="md"
-                                            radius="xl"
-                                            aria-label={`Reveal ${file.name} in Explorer`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleReveal(file);
-                                            }}
-                                            onDoubleClick={(e) => e.stopPropagation()}
-                                        >
-                                            <FolderOpenIcon size={14} />
-                                        </ActionIcon>
-                                    </Tooltip>
-                                </MediaThumb>
-                            </Card.Section>
-
-                            <Stack gap={4} p="sm">
-                                <Text fw={600} size="sm" truncate title={file.name}>
-                                    {file.name}
-                                </Text>
-                                <Group gap={6} c="dimmed">
-                                    <ClockIcon size={14} />
-                                    <Text size="xs" c="dimmed">
-                                        {timeAgo(file.modified_at)}
-                                    </Text>
-                                </Group>
-                            </Stack>
-                        </Card>
+                        <li key={file.path}>
+                            <button
+                                type="button"
+                                className={classes.item}
+                                aria-label={`Preview ${file.name}`}
+                                onClick={() => setLightbox(file)}
+                                onDoubleClick={() => handleReveal(file)}
+                            >
+                                <span className={classes.frame}>
+                                    <MediaThumb
+                                        src={convertFileSrc(file.path)}
+                                        type={file.file_type === "video" ? "video" : "image"}
+                                        name={file.name}
+                                        ratio={16 / 10}
+                                        lazy
+                                    />
+                                </span>
+                                <span className={classes.text}>
+                                    <span className={classes.name} title={file.name}>
+                                        {file.name}
+                                    </span>
+                                    <span className={classes.meta}>{timeAgo(file.modified_at)}</span>
+                                </span>
+                            </button>
+                        </li>
                     ))}
-                </div>
+                </ul>
             )}
 
             {/* Lightbox */}
@@ -208,45 +149,27 @@ export default function OutputsPanel({ refreshTick, onGoToQueue }: OutputsPanelP
                 size="min(1040px, 94vw)"
                 overlayProps={{ backgroundOpacity: 0.65, blur: 4 }}
                 transitionProps={{ transition: "pop", duration: 150 }}
-                title={
-                    <Text fw={650} truncate maw={560}>
-                        {lightbox?.name}
-                    </Text>
-                }
+                classNames={{ content: classes.lightboxContent, header: classes.lightboxHeader, title: classes.lightboxTitle }}
+                title={lightbox?.name}
             >
                 {lightbox && (
-                    <Stack gap="md">
-                        <Group justify="center" bg="var(--mantine-color-default-hover)" p="md" style={{ borderRadius: "var(--mantine-radius-md)" }}>
+                    <>
+                        <div className={classes.lightboxStage}>
                             {lightbox.file_type === "video" ? (
-                                <video
-                                    src={convertFileSrc(lightbox.path)}
-                                    style={{ maxWidth: "100%", maxHeight: "62vh", borderRadius: 8 }}
-                                    controls
-                                    autoPlay
-                                    muted
-                                />
+                                <video className={classes.lightboxMedia} src={convertFileSrc(lightbox.path)} controls autoPlay muted />
                             ) : (
-                                <img
-                                    src={convertFileSrc(lightbox.path)}
-                                    alt={lightbox.name}
-                                    style={{ maxWidth: "100%", maxHeight: "62vh", objectFit: "contain", borderRadius: 8 }}
-                                />
+                                <img className={classes.lightboxMedia} src={convertFileSrc(lightbox.path)} alt={lightbox.name} />
                             )}
-                        </Group>
-                        <Group justify="space-between">
-                            <Group gap={6} c="dimmed">
-                                <ClockIcon size={14} />
-                                <Text size="sm" c="dimmed">
-                                    {timeAgo(lightbox.modified_at)}
-                                </Text>
-                            </Group>
+                        </div>
+                        <div className={classes.lightboxFoot}>
+                            <span>{timeAgo(lightbox.modified_at)}</span>
                             <Button leftSection={<FolderOpenIcon size={16} />} onClick={() => handleReveal(lightbox)}>
-                                Reveal in Explorer
+                                Show in Explorer
                             </Button>
-                        </Group>
-                    </Stack>
+                        </div>
+                    </>
                 )}
             </Modal>
-        </Stack>
+        </div>
     );
 }

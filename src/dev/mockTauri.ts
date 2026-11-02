@@ -50,6 +50,8 @@ export const mockState = {
     latencyMs: 450,
     /** Command names that should reject, to exercise error toasts. */
     failing: new Set<string>(),
+    /** Sample names that fail inside process_files, to exercise partial failures. */
+    failingFiles: new Set<string>(),
 };
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -80,18 +82,32 @@ export function installTauriMock() {
                     if (opts?.directory) return "D:\\Exports\\AutoCrop";
                     return Object.entries(SAMPLES).map(([k, s]) => `${INPUT_DIR}\\${k}.${s.ext}`);
                 }
+                case "expand_paths": {
+                    // Anything without an extension stands in for a folder of the samples.
+                    const paths = (a.paths as string[]) ?? [];
+                    return paths.flatMap((p) =>
+                        /\.[^\\/.]+$/.test(p)
+                            ? [p]
+                            : Object.entries(SAMPLES).map(([k, s]) => `${p}\\${k}.${s.ext}`),
+                    );
+                }
                 case "detect_crop_areas": {
                     await sleep(mockState.latencyMs);
                     const s = SAMPLES[sampleKey(String(a.filePath))];
                     return s ? s.crop : { x: 0, y: 0, w: 0, h: 0 };
                 }
                 case "process_files": {
-                    const items = (a.items as unknown[]) ?? [];
+                    const items = (a.items as { path: string }[]) ?? [];
                     const total = Math.max(items.length, 1);
+                    const errors: string[] = [];
                     for (let i = 1; i <= total; i++) {
                         await sleep(500);
-                        await emit("crop-progress", { current: i, total, message: `Cropping ${i} of ${total}` });
+                        const path = items[i - 1]?.path ?? "";
+                        const error = mockState.failingFiles.has(sampleKey(path)) ? "mock failure" : null;
+                        if (error) errors.push(`${sampleKey(path)}: ${error}`);
+                        await emit("crop-progress", { current: i, total, message: `Cropping ${i} of ${total}`, path, error });
                     }
+                    if (errors.length) throw `${errors.length}/${total} files had errors:\n${errors.join("\n")}`;
                     return null;
                 }
                 case "get_save_location":

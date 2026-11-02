@@ -1,5 +1,21 @@
-/* Global tweaks only — components are styled through the Mantine theme
-   (src/theme.ts) and per-component CSS Modules. */
+/* Global tweaks only: components are styled through the Mantine theme
+   (src/theme.ts) and per-component CSS Modules, on the tokens shared with the website. */
+@import "./tokens.css";
+
+:root,
+:root[data-mantine-color-scheme='light'],
+:root[data-mantine-color-scheme='dark'] {
+  --mantine-color-body: var(--surface);
+  --mantine-color-text: var(--ink);
+  --mantine-color-dimmed: var(--muted);
+  --mantine-color-default-border: var(--hairline);
+}
+
+/* The filled button is ink in light mode and near white in dark, so its text flips with it. */
+.mantine-Button-root:not([data-variant]),
+.mantine-Button-root[data-variant='filled'] {
+  color: var(--surface);
+}
 
 html,
 body,
@@ -14,6 +30,27 @@ body {
   overscroll-behavior: none;
 }
 
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  font-optical-sizing: auto;
+}
+
+::selection {
+  background: #141414;
+  color: #fff;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 /* Slim, theme-aware scrollbars (WebView2 / Chromium) */
 ::-webkit-scrollbar {
   width: 10px;
@@ -23,12 +60,12 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--mantine-color-default-border);
-  border: 2px solid var(--mantine-color-body);
+  background: var(--hairline);
+  border: 2px solid var(--surface);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mantine-color-dimmed);
+  background: var(--fade);
 }
 
 @media (prefers-reduced-motion: reduce) {

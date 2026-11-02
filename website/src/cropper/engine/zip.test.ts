@@ -48,4 +48,12 @@ describe("buildZip", () => {
     expect(decode(second + 46, secondNameLen)).toBe("dir/b.txt");
     expect(view.getUint32(second + 42, true)).toBe(30 + nameLen + 5);
   });
+
+  it("keeps same-named files apart", async () => {
+    const zip = await buildZip([text("a_cropped.png", "1"), text("A_cropped.png", "2"), text("a_cropped.png", "3")]);
+    const raw = new TextDecoder().decode(await bytes(zip));
+    expect(raw).toContain("a_cropped.png");
+    expect(raw).toContain("A_cropped (1).png");
+    expect(raw).toContain("a_cropped (2).png");
+  });
 });

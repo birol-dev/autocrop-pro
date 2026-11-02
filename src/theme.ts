@@ -1,57 +1,59 @@
 import { createTheme, type MantineColorsTuple } from "@mantine/core";
 
-// Violet scale anchored on the logo's flower (#7c3aed at shade 6).
-const brand: MantineColorsTuple = [
-    "#f5f3ff",
-    "#ede9fe",
-    "#ddd6fe",
-    "#c4b5fd",
-    "#a78bfa",
-    "#8b5cf6",
-    "#7c3aed",
-    "#6d28d9",
-    "#5b21b6",
-    "#4c1d95",
+// The frame is monochrome so the media supplies all of the colour.
+const ink: MantineColorsTuple = [
+    "#f4f4f4",
+    "#e5e5e2",
+    "#cfcfcf",
+    "#b6b6b6",
+    "#8a8a8a",
+    "#5f5f5f",
+    "#3a3a3a",
+    "#1c1c1c",
+    "#141414",
+    "#0a0a0a",
 ];
 
 const fontStack =
     "'Inter Variable', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
 
+const serif = "'Newsreader Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif";
+
 export const theme = createTheme({
-    primaryColor: "brand",
-    primaryShade: { light: 6, dark: 5 },
-    colors: { brand },
+    primaryColor: "ink",
+    primaryShade: { light: 8, dark: 0 },
+    colors: { ink },
+    autoContrast: true,
 
     fontFamily: fontStack,
     fontFamilyMonospace: "ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace",
     headings: {
-        fontFamily: fontStack,
-        fontWeight: "650",
+        fontFamily: serif,
+        fontWeight: "200",
         sizes: {
-            h1: { fontSize: "1.75rem", lineHeight: "1.2" },
-            h2: { fontSize: "1.375rem", lineHeight: "1.25" },
-            h3: { fontSize: "1.125rem", lineHeight: "1.3" },
-            h4: { fontSize: "1rem", lineHeight: "1.35" },
+            h1: { fontSize: "clamp(2.5rem, 1.5rem + 3vw, 4rem)", lineHeight: "1.02", fontWeight: "200" },
+            h2: { fontSize: "2rem", lineHeight: "1.1", fontWeight: "200" },
+            h3: { fontSize: "1.5rem", lineHeight: "1.15", fontWeight: "300" },
+            h4: { fontSize: "1rem", lineHeight: "1.35", fontWeight: "500" },
         },
     },
 
     defaultRadius: "md",
+    radius: { xs: "8px", sm: "12px", md: "16px", lg: "24px", xl: "32px" },
     cursorType: "pointer",
-    black: "#17171c",
-
-    shadows: {
-        xs: "0 1px 2px rgba(17, 17, 26, 0.06)",
-        sm: "0 1px 3px rgba(17, 17, 26, 0.08), 0 1px 2px rgba(17, 17, 26, 0.04)",
-        md: "0 6px 16px -4px rgba(17, 17, 26, 0.12), 0 2px 4px rgba(17, 17, 26, 0.04)",
-        lg: "0 16px 32px -8px rgba(17, 17, 26, 0.18), 0 4px 8px rgba(17, 17, 26, 0.05)",
-    },
+    black: "#141414",
 
     components: {
-        Button: { defaultProps: { fw: 600 } },
-        Badge: { defaultProps: { fw: 600, tt: "none" } },
+        Button: { defaultProps: { fw: 400, radius: 999 } },
+        ActionIcon: { defaultProps: { radius: 999 } },
+        Badge: { defaultProps: { fw: 400, tt: "none", radius: 999 } },
         Tooltip: { defaultProps: { withArrow: true, openDelay: 250, fz: "xs" } },
         Paper: { defaultProps: { radius: "lg" } },
         Card: { defaultProps: { radius: "lg" } },
         Modal: { defaultProps: { radius: "lg", centered: true } },
+        Select: { defaultProps: { radius: 999 } },
+        TextInput: { defaultProps: { radius: 999 } },
+        NumberInput: { defaultProps: { radius: 999 } },
+        SegmentedControl: { defaultProps: { radius: 999 } },
     },
 });

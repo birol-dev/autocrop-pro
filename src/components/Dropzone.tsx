@@ -1,66 +1,40 @@
-import { Button, Group, Stack, Text, ThemeIcon, Title, UnstyledButton } from "@mantine/core";
-import { PlusIcon, UploadSimpleIcon } from "@phosphor-icons/react";
+import { Button, Title } from "@mantine/core";
 
 import classes from "./Dropzone.module.css";
 
 type DropzoneProps = {
     /** A file is currently being dragged over the window (Tauri native drag events). */
     isDragHovering: boolean;
-    isProcessing: boolean;
-    /** Once the queue has files the zone collapses into a slim "add more" bar. */
-    compact: boolean;
-    onBrowse: () => void;
+    onBrowseFiles: () => void;
+    onBrowseFolder: () => void;
 };
 
-export default function Dropzone({ isDragHovering, isProcessing, compact, onBrowse }: DropzoneProps) {
-    const heading = isDragHovering ? "Release to add files" : compact ? "Drop more files here" : "Drop your media here";
-
+/** The empty queue. The whole window takes drops; this is what it says about them. */
+export default function Dropzone({ isDragHovering, onBrowseFiles, onBrowseFolder }: DropzoneProps) {
     return (
-        <UnstyledButton
-            className={classes.root}
-            onClick={onBrowse}
-            data-hover={isDragHovering || undefined}
-            data-disabled={isProcessing || undefined}
-            data-compact={compact || undefined}
-            aria-label="Add media files"
-            p={compact ? "md" : 48}
-        >
-            {compact ? (
-                <Group justify="space-between" wrap="nowrap">
-                    <Group wrap="nowrap" gap="md">
-                        <ThemeIcon size={40} radius="md" variant={isDragHovering ? "filled" : "light"}>
-                            <UploadSimpleIcon size={22} weight="bold" />
-                        </ThemeIcon>
-                        <div>
-                            <Text fw={600}>{heading}</Text>
-                            <Text size="xs" c="dimmed">
-                                or click to browse your computer
-                            </Text>
-                        </div>
-                    </Group>
-                    <Button component="span" variant="light" leftSection={<PlusIcon size={16} weight="bold" />}>
-                        Add files
-                    </Button>
-                </Group>
-            ) : (
-                <Stack align="center" gap="sm">
-                    <ThemeIcon size={68} radius="xl" variant={isDragHovering ? "filled" : "light"}>
-                        <UploadSimpleIcon size={34} weight={isDragHovering ? "bold" : "duotone"} />
-                    </ThemeIcon>
-                    <Title order={3} mt="xs">
-                        {heading}
-                    </Title>
-                    <Text c="dimmed" maw={420}>
-                        Add images or videos and AutoCrop Pro will find and trim the black borders for you.
-                    </Text>
-                    <Button component="span" mt="xs" size="md" leftSection={<PlusIcon size={18} weight="bold" />}>
-                        Browse files
-                    </Button>
-                    <Text size="xs" c="dimmed" mt="xs">
-                        PNG · JPG · WebP · BMP · TIFF · GIF · MP4 · MOV · MKV · AVI · WebM
-                    </Text>
-                </Stack>
-            )}
-        </UnstyledButton>
+        <div className={classes.root} data-hover={isDragHovering || undefined}>
+            <Title order={1} className={classes.title}>
+                {isDragHovering ? (
+                    "Let go."
+                ) : (
+                    <>
+                        Drop a folder.
+                        <br />
+                        <span className={classes.fade}>Lose the black bars.</span>
+                    </>
+                )}
+            </Title>
+
+            <div className={classes.actions}>
+                <Button size="md" onClick={onBrowseFiles}>
+                    Choose files
+                </Button>
+                <Button size="md" variant="default" onClick={onBrowseFolder}>
+                    Choose a folder
+                </Button>
+            </div>
+
+            <p className={classes.formats}>Photos and videos. PNG, JPG, WebP, BMP, TIFF, GIF, MP4, MOV, MKV, AVI, WebM.</p>
+        </div>
     );
 }

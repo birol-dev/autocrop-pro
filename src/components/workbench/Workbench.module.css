@@ -1,0 +1,477 @@
+/* The tool's frame, shared by the desktop app and the web cropper. It reads only the
+   tone tokens, so it works on a plain surface and on the website's dark glass alike. */
+.window {
+  container: workbench / inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding-inline: 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+
+.tab[aria-selected='true'] {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.tabCount {
+  color: var(--fade);
+  font-variant-numeric: tabular-nums;
+}
+
+.barEnd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ink);
+  transform-origin: 0 50%;
+  transition: transform 240ms var(--ease-out);
+}
+
+.body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--hairline);
+}
+
+.sideHead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 10px 4px 16px;
+}
+
+.sideTitle {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+
+.iconButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 10px 10px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  border-radius: 13px;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.row[data-active] {
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.rowMain {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.thumb {
+  flex: none;
+  width: 64px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+}
+
+.rowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rowName {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowError {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--mantine-color-red-5);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.rowState {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  margin-right: 4px;
+  color: var(--ink);
+}
+
+.rowState[data-state='error'] {
+  color: var(--mantine-color-red-5);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Takes the status mark's place when the row is hovered, so nothing shifts. */
+.remove {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition:
+    opacity 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.row:hover .remove,
+.row:focus-within .remove {
+  opacity: 1;
+}
+
+.remove:disabled {
+  display: none;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+}
+
+.controls {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tolerance {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 3.2em;
+  gap: 16px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.toleranceValue {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider {
+  --slider-track-bg: var(--hairline);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  align-items: center;
+}
+
+.formatInput.formatInput {
+  min-height: 44px;
+  border: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.format {
+  width: 180px;
+}
+
+.switchLabel {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.switchTrack.switchTrack {
+  border: 0;
+  background: var(--hairline);
+}
+
+.switchThumb.switchThumb {
+  border: 0;
+  background: var(--muted);
+}
+
+input:checked + .switchTrack.switchTrack {
+  background: var(--ink);
+}
+
+input:checked + .switchTrack .switchThumb.switchThumb {
+  background: var(--surface);
+}
+
+.danger {
+  color: var(--mantine-color-red-5);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-left: auto;
+  padding-inline: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 180ms var(--ease-out);
+}
+
+.action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 16px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--fade);
+}
+
+.status {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .tab:hover:not([aria-selected='true']),
+  .iconButton:hover:not(:disabled) {
+    color: var(--ink);
+  }
+
+  .iconButton:hover:not(:disabled) {
+    background: var(--panel);
+  }
+
+  .row:not([data-active]):hover {
+    background: var(--panel);
+  }
+
+  .remove:hover {
+    color: var(--ink);
+  }
+
+  .action:hover:not(:disabled) {
+    opacity: 0.82;
+  }
+}
+
+@media (hover: none) {
+  .remove {
+    opacity: 1;
+  }
+}
+
+/* Small windows and phones: one column, the picture first, then the batch. */
+@container workbench (max-width: 760px) {
+  .body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .side {
+    order: 1;
+    border-top: 1px solid var(--hairline);
+    border-right: 0;
+  }
+
+  .rows {
+    overflow: visible;
+  }
+
+  .tolerance {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .slider {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .format,
+  .action {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .action {
+    min-height: 56px;
+    font-size: 16px;
+  }
+
+  .foot {
+    flex-direction: column;
+    gap: 2px;
+    text-align: center;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

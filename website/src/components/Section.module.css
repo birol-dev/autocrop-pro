@@ -1,26 +1,97 @@
-.section {
-  padding-block: clamp(64px, 9vw, 112px);
+.chapter {
+  padding-block: var(--space-chapter);
 }
 
-.section[data-tint] {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-  border-block: 1px solid var(--mantine-color-default-border);
+.chapter[data-flush-top] {
+  padding-top: 0;
 }
 
-.eyebrow {
-  letter-spacing: 0.08em;
-  font-size: 11px;
+.margins {
+  padding-inline: var(--page-margin);
 }
 
-.title {
-  letter-spacing: -0.025em;
-  text-wrap: balance;
+.fade {
+  color: var(--fade);
 }
 
-.accent {
-  background-image: linear-gradient(100deg, var(--mantine-color-brand-6), var(--mantine-color-pink-5));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-style: normal;
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    opacity 180ms var(--ease-out);
+}
+
+.pill[data-size='md'] {
+  min-height: 44px;
+  padding-inline: 20px;
+  font-size: 14px;
+}
+
+.pill[data-size='lg'] {
+  min-height: 56px;
+  padding-inline: 28px;
+  font-size: 16px;
+}
+
+.pill[data-variant='solid'] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.pill[data-variant='soft'] {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.pill[data-variant='plain'] {
+  padding-inline: 4px;
+  background: transparent;
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .pill[data-variant='solid']:hover,
+  .pill[data-variant='soft']:hover {
+    opacity: 0.82;
+  }
+
+  .pill[data-variant='plain']:hover {
+    color: var(--muted);
+  }
+}
+
+.pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.media {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  border-radius: var(--radius-card);
+  background: var(--panel);
+}
+
+.media[data-floating] {
+  box-shadow: var(--shadow-float);
+}
+
+.media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

@@ -10,6 +10,8 @@ type MediaThumbProps = {
     name: string;
     ratio?: number;
     lazy?: boolean;
+    /** Small thumbnails: no hover play button. */
+    plain?: boolean;
     /** Overlay content (badges, action buttons) rendered above the media. */
     children?: ReactNode;
 };
@@ -18,7 +20,7 @@ type MediaThumbProps = {
  * Cover-fit thumbnail for an image or video with a graceful fallback when the
  * file can't be decoded. Shared by the queue and the outputs gallery.
  */
-export default function MediaThumb({ src, type, name, ratio = 16 / 10, lazy, children }: MediaThumbProps) {
+export default function MediaThumb({ src, type, name, ratio = 16 / 10, lazy, plain, children }: MediaThumbProps) {
     const [failed, setFailed] = useState(false);
     const showMedia = !!src && !failed;
     const Fallback = type === "video" ? FilmStripIcon : ImageSquareIcon;
@@ -49,7 +51,7 @@ export default function MediaThumb({ src, type, name, ratio = 16 / 10, lazy, chi
                 </div>
             )}
 
-            {showMedia && type === "video" && (
+            {showMedia && type === "video" && !plain && (
                 <div className={classes.playOverlay}>
                     <span className={classes.playButton}>
                         <PlayIcon size={16} weight="fill" style={{ marginLeft: 2 }} />

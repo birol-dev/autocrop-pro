@@ -1,0 +1,16 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+}
+
+.count {
+  color: var(--fade);
+  font-variant-numeric: tabular-nums;
+}

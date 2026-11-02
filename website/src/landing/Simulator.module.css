@@ -1,98 +1,83 @@
-.grid {
-  display: grid;
-  gap: clamp(32px, 5vw, 72px);
+.wrap {
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: var(--space-block);
+}
 
-  @media (min-width: $mantine-breakpoint-md) {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  }
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-group);
+  text-align: center;
+}
+
+.title {
+  max-width: 18ch;
+  margin: 0;
 }
 
 .window {
+  width: 100%;
+  max-width: 860px;
   overflow: hidden;
-}
-
-.bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--mantine-color-default-border);
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-}
-
-.dots {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.dots i {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
 }
 
 .body {
-  padding: var(--mantine-spacing-lg);
+  padding: clamp(14px, 2vw, 22px);
 }
 
 .canvas {
   position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: var(--mantine-radius-md);
+  border-radius: var(--radius-inner);
   background: #000;
 }
 
 /* The detected crop rectangle; the oversized shadow dims whatever is outside it. */
 .box {
-  --tone: var(--mantine-primary-color-filled);
   position: absolute;
-  border: 2px solid var(--tone);
-  box-shadow: 0 0 0 9999px rgba(8, 8, 14, 0.62);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
   transition:
-    top 160ms ease,
-    left 160ms ease,
-    width 160ms ease,
-    height 160ms ease,
-    border-color 160ms ease;
+    top 160ms var(--ease-out),
+    left 160ms var(--ease-out),
+    width 160ms var(--ease-out),
+    height 160ms var(--ease-out);
 }
 
-.box[data-tone='ok'] {
-  --tone: var(--mantine-color-teal-5);
-}
-.box[data-tone='warn'] {
-  --tone: var(--mantine-color-yellow-5);
-}
+.box[data-tone='warn'],
 .box[data-tone='danger'] {
-  --tone: var(--mantine-color-red-5);
+  border-style: dashed;
 }
 
 .handle {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   background: #fff;
-  border: 2px solid var(--tone);
-  border-radius: 2px;
 }
+
 .handle[data-pos='tl'] {
-  top: -6px;
-  left: -6px;
+  top: -5px;
+  left: -5px;
 }
 .handle[data-pos='tr'] {
-  top: -6px;
-  right: -6px;
+  top: -5px;
+  right: -5px;
 }
 .handle[data-pos='bl'] {
-  bottom: -6px;
-  left: -6px;
+  bottom: -5px;
+  left: -5px;
 }
 .handle[data-pos='br'] {
-  bottom: -6px;
-  right: -6px;
+  bottom: -5px;
+  right: -5px;
 }
 
 .dims {
@@ -100,11 +85,47 @@
   top: 8px;
   left: 8px;
   padding: 2px 8px;
+  border-radius: 4px;
+  background: #fff;
+  color: #141414;
   font-family: var(--mantine-font-family-monospace);
   font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--tone);
-  border-radius: var(--mantine-radius-sm);
   font-variant-numeric: tabular-nums;
+}
+
+.sliderHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: var(--space-group);
+}
+
+.label {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.value {
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider.slider {
+  margin-block: 22px;
+  --slider-track-bg: var(--hairline);
+}
+
+.status {
+  display: flex;
+  justify-content: center;
+}
+
+.detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
 }

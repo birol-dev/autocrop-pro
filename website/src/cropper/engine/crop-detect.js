@@ -76,20 +76,12 @@ export function detectImageCrop(data, width, height, opts = {}) {
  * @returns {CropArea}
  */
 export function applyPadding(crop, width, height, pad = 10) {
-  const x = Math.max(0, crop.x - pad);
-  const y = Math.max(0, crop.y - pad);
-  const w = crop.w + pad * 2;
-  const h = crop.h + pad * 2;
-  const safeX = Math.min(x, Math.max(0, width - 1));
-  const safeY = Math.min(y, Math.max(0, height - 1));
-  const maxW = Math.max(0, width - safeX);
-  const maxH = Math.max(0, height - safeY);
-  return {
-    x: safeX,
-    y: safeY,
-    w: w === 0 ? maxW : Math.min(w, maxW),
-    h: h === 0 ? maxH : Math.min(h, maxH),
-  };
+  const x = Math.min(Math.max(0, crop.x - pad), Math.max(0, width - 1));
+  const y = Math.min(Math.max(0, crop.y - pad), Math.max(0, height - 1));
+  // The far edge is measured from the original box, so clamping at 0 can't shift pixels across.
+  const right = Math.min(width, crop.x + crop.w + pad);
+  const bottom = Math.min(height, crop.y + crop.h + pad);
+  return { x, y, w: Math.max(0, right - x), h: Math.max(0, bottom - y) };
 }
 
 /**

@@ -77,7 +77,7 @@ export function landingJsonLd() {
         step: STEPS.map((s, i) => ({
           "@type": "HowToStep",
           position: i + 1,
-          name: s.name === "Preview & tune" ? "Preview and tune" : s.name,
+          name: s.name,
           text: s.text,
         })),
       },

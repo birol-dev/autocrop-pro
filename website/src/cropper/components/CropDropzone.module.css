@@ -1,43 +1,138 @@
-.root {
-  border: 2px dashed var(--mantine-color-default-border);
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease;
-
-  @mixin hover {
-    border-color: var(--mantine-primary-color-filled);
-    background-color: light-dark(var(--mantine-primary-color-0), alpha(var(--mantine-primary-color-filled), 0.08));
-  }
-
-  &:focus-visible {
-    border-color: var(--mantine-primary-color-filled);
-    outline: 2px solid alpha(var(--mantine-primary-color-filled), 0.4);
-    outline-offset: 2px;
-  }
-
-  &[data-accept] {
-    border-style: solid;
-    border-color: var(--mantine-primary-color-filled);
-    background-color: light-dark(var(--mantine-primary-color-light), alpha(var(--mantine-primary-color-filled), 0.16));
-    box-shadow: 0 0 0 4px alpha(var(--mantine-primary-color-filled), 0.15);
-  }
-
-  &[data-disabled] {
-    opacity: 0.5;
-  }
-
-  &[data-compact] {
-    padding: var(--mantine-spacing-md);
-  }
-
-  &:not([data-compact]) {
-    padding: clamp(32px, 7vw, 72px) var(--mantine-spacing-md);
-    text-align: center;
-  }
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  text-align: center;
 }
 
-.empty {
+.root[data-activate-on-click] {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: clamp(24px, 5svh, 48px) 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  transition: box-shadow 180ms var(--ease-out);
+}
+
+.root[data-activate-on-click][data-accept] {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.root[data-activate-on-click][data-reject] {
+  box-shadow: inset 0 0 0 1px var(--mantine-color-red-5);
+}
+
+.root[data-activate-on-click][data-disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
   pointer-events: none;
+}
+
+.title {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  font-weight: 300;
+  line-height: 1.06;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.formats {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fade);
+}
+
+/* In the queue's header: a pill that also takes drops. */
+.compact[data-activate-on-click] {
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  transition: box-shadow 180ms var(--ease-out);
+}
+
+.compact[data-activate-on-click][data-accept] {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.compact[data-activate-on-click][data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.compactInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding-inline: 14px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.fullScreen {
+  background: rgba(14, 20, 30, 0.7);
+  color: #fff;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.full {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  pointer-events: none;
+}
+
+.fullTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
+  font-weight: 200;
+  letter-spacing: -0.03em;
 }

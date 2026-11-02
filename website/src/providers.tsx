@@ -5,7 +5,7 @@ import { siteTheme } from "./theme";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <MantineProvider theme={siteTheme} defaultColorScheme="auto">
+    <MantineProvider theme={siteTheme} defaultColorScheme="light">
       <Notifications position="bottom-right" limit={4} />
       {children}
     </MantineProvider>
