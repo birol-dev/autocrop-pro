@@ -70,7 +70,7 @@ Tailwind, `lucide-react`, `sonner`, `clsx`, `tailwind-merge` were removed.
 ## 4. Design tokens
 
 Defined once in `src/theme.ts` (Mantine theme) instead of ad-hoc CSS variables:
-brand colour (violet, matching the logo's flower), Inter typography, radii, light/dark neutrals,
+monochrome brand colour, Inter typography, radii, light/dark neutrals,
 default component props (radius, size, focus ring).
 
 ## 5. Website (`website/`)
