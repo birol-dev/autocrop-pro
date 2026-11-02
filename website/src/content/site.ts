@@ -1,7 +1,7 @@
 import pkg from "../../../package.json";
 
 export const SITE_URL = "https://autocrop.birol.tech";
-export const GITHUB_URL = "https://github.com/eact6/autocrop-pro";
+export const GITHUB_URL = "https://github.com/birol-dev/autocrop-pro";
 export const RELEASES_URL = `${GITHUB_URL}/releases`;
 export const VERSION = pkg.version;
 

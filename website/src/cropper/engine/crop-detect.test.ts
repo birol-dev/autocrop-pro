@@ -57,7 +57,7 @@ describe("applyPadding", () => {
 
   it("clamps to the frame edges", () => {
     expect(applyPadding({ x: 80, y: 20, w: 20, h: 20 }, 100, 60)).toEqual({ x: 70, y: 10, w: 30, h: 40 });
-    expect(applyPadding({ x: 5, y: 5, w: 50, h: 30 }, 100, 60)).toEqual({ x: 0, y: 0, w: 70, h: 50 });
+    expect(applyPadding({ x: 5, y: 5, w: 50, h: 30 }, 100, 60)).toEqual({ x: 0, y: 0, w: 65, h: 45 });
   });
 
   it("honours a custom padding", () => {

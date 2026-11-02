@@ -13,7 +13,7 @@ export function notifyError(message: string, title = "Something went wrong") {
 
 export function notifyWarning(message: string, title?: string) {
     notifications.show({
-        color: "yellow",
+        color: "gray",
         title,
         message,
         icon: <WarningCircleIcon size={20} weight="fill" />,
@@ -23,7 +23,7 @@ export function notifyWarning(message: string, title?: string) {
 
 export function notifySuccess(message: string, title?: string) {
     notifications.show({
-        color: "teal",
+        color: "gray",
         title,
         message,
         icon: <CheckCircleIcon size={20} weight="fill" />,

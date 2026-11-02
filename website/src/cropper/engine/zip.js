@@ -31,6 +31,21 @@ function u32(n) {
 }
 
 /**
+ * Same-named files (say, from two folders) would otherwise overwrite each other on extract.
+ * @param {string} name
+ * @param {Set<string>} taken
+ */
+function uniqueName(name, taken) {
+  const dot = name.lastIndexOf(".");
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : "";
+  let candidate = name;
+  for (let n = 1; taken.has(candidate.toLowerCase()); n++) candidate = `${stem} (${n})${ext}`;
+  taken.add(candidate.toLowerCase());
+  return candidate;
+}
+
+/**
  * Uncompressed ZIP (STORE). Avoids extra CDN deps.
  * @param {{ name: string, blob: Blob }[]} entries
  * @returns {Promise<Blob>}
@@ -39,10 +54,11 @@ export async function buildZip(entries) {
   const encoder = new TextEncoder();
   const chunks = [];
   const centrals = [];
+  const taken = new Set();
   let offset = 0;
 
   for (const entry of entries) {
-    const nameBytes = encoder.encode(entry.name.replace(/\\/g, "/"));
+    const nameBytes = encoder.encode(uniqueName(entry.name.replace(/\\/g, "/"), taken));
     const data = new Uint8Array(await entry.blob.arrayBuffer());
     const crc = crc32(data);
     const size = data.length;

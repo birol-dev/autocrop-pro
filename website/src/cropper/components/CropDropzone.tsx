@@ -1,73 +1,91 @@
+import { useRef } from "react";
+import { Title } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
+import { PlusIcon } from "@phosphor-icons/react";
 
-import { Pill } from "../../components/Section";
+import { Fade, Pill } from "../../components/Section";
 import classes from "./CropDropzone.module.css";
 
 type Props = {
-  /** Once the queue has files the zone collapses into a slim "add more" bar. */
-  compact: boolean;
+  /** The slim "add more" target in the queue's header, instead of the whole empty window. */
+  compact?: boolean;
   disabled: boolean;
-  loadingSamples: boolean;
+  loadingSamples?: boolean;
   onFiles: (files: File[]) => void;
-  onSample: () => void;
+  onSample?: () => void;
+  onFolder?: () => void;
 };
 
-const FORMATS = "PNG · JPG · WebP · BMP · TIFF · GIF · MP4 · MOV · MKV · AVI · WebM";
+/** A hidden folder input and the function that opens it. Dropped folders work without this. */
+export function useFolderPicker(onFiles: (files: File[]) => void) {
+  const ref = useRef<HTMLInputElement>(null);
+  const input = (
+    <input
+      ref={ref}
+      type="file"
+      multiple
+      hidden
+      tabIndex={-1}
+      aria-hidden="true"
+      {...{ webkitdirectory: "" }}
+      onChange={(e) => {
+        onFiles(Array.from(e.currentTarget.files ?? []));
+        e.currentTarget.value = "";
+      }}
+    />
+  );
+  return { input, open: () => ref.current?.click() };
+}
 
-export default function CropDropzone({ compact, disabled, loadingSamples, onFiles, onSample }: Props) {
+export default function CropDropzone({ compact, disabled, loadingSamples, onFiles, onSample, onFolder }: Props) {
   return (
     <>
-      <Dropzone
-        onDrop={onFiles}
-        disabled={disabled}
-        className={classes.root}
-        data-compact={compact || undefined}
-        aria-label="Add media files"
-      >
-        {compact ? (
-          <div className={classes.compact}>
-            <div className={classes.compactText}>
-              <p className={classes.compactTitle}>
-                <Dropzone.Accept>Release to add files</Dropzone.Accept>
-                <Dropzone.Idle>Drop more files here</Dropzone.Idle>
-              </p>
-              <p className={classes.compactHint}>or click to browse your computer</p>
+      {compact ? (
+        <Dropzone onDrop={onFiles} disabled={disabled} className={classes.compact} aria-label="Add files">
+          <span className={classes.compactInner}>
+            <PlusIcon size={14} aria-hidden="true" />
+            <Dropzone.Accept>Let go</Dropzone.Accept>
+            <Dropzone.Reject>Add files</Dropzone.Reject>
+            <Dropzone.Idle>Add files</Dropzone.Idle>
+          </span>
+        </Dropzone>
+      ) : (
+        <div className={classes.empty}>
+          <Dropzone onDrop={onFiles} disabled={disabled} className={classes.root} aria-label="Add files">
+            <div className={classes.zone}>
+              <Title order={2} className={classes.title}>
+                <Dropzone.Accept>Let go.</Dropzone.Accept>
+                <Dropzone.Reject>Drop your files here.</Dropzone.Reject>
+                <Dropzone.Idle>
+                  Drop your files here. <Fade>Or a whole folder.</Fade>
+                </Dropzone.Idle>
+              </Title>
+              <span className={classes.pill}>Choose files</span>
             </div>
-            <span className={classes.pill}>Add files</span>
-          </div>
-        ) : (
-          <div className={classes.empty}>
-            <p className={classes.dropTitle}>
-              <Dropzone.Accept>Release to add files</Dropzone.Accept>
-              <Dropzone.Idle>Drop your media here</Dropzone.Idle>
-            </p>
-            <p className={classes.dropText}>
-              Add images or videos and AutoCrop Pro will find and trim the black borders — right in this tab.
-            </p>
-            <span className={classes.pill}>Browse files</span>
-            <p className={classes.formats}>{FORMATS}</p>
-          </div>
-        )}
-      </Dropzone>
+          </Dropzone>
 
-      {!compact && (
-        <div className={classes.sampleRow}>
-          <span className={classes.sampleText}>No files handy?</span>
-          <Pill
-            variant="soft"
-            onClick={onSample}
-            disabled={disabled || loadingSamples}
-            aria-busy={loadingSamples || undefined}
-          >
-            {loadingSamples ? "Loading samples…" : "Try sample images"}
-          </Pill>
+          <div className={classes.alternatives}>
+            <Pill variant="soft" onClick={onFolder} disabled={disabled}>
+              Choose a folder
+            </Pill>
+            <Pill
+              variant="soft"
+              onClick={onSample}
+              disabled={disabled || loadingSamples}
+              aria-busy={loadingSamples || undefined}
+            >
+              {loadingSamples ? "Loading samples…" : "Try sample images"}
+            </Pill>
+          </div>
+
+          <p className={classes.formats}>PNG, JPG, WebP, BMP, GIF, MP4, MOV, WebM.</p>
         </div>
       )}
 
-      <Dropzone.FullScreen onDrop={onFiles} disabled={disabled}>
+      {/* The whole page takes drops, not just the target. */}
+      <Dropzone.FullScreen onDrop={onFiles} disabled={disabled} classNames={{ fullScreen: classes.fullScreen }}>
         <div className={classes.full}>
-          <p className={classes.fullTitle}>Drop to add files</p>
-          <p className={classes.fullText}>Images and videos stay on your device.</p>
+          <p className={classes.fullTitle}>Drop to add</p>
         </div>
       </Dropzone.FullScreen>
     </>

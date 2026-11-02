@@ -19,6 +19,8 @@ export type Item = {
   error: string | null;
   resultBlob: Blob | null;
   resultName: string | null;
+  /** The size that was actually written, which outlives later changes to the tolerance. */
+  resultDims: string | null;
   /** Options signature the result was produced with, so changed settings trigger a re-run. */
   resultKey: string | null;
   risky: boolean;

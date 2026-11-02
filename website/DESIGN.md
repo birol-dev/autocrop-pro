@@ -16,8 +16,9 @@ radii or spacing values.
   text or backgrounds. Do not use `--mantine-color-brand-*`.
 - Sections swap background as chapter breaks through `<Chapter tone="paper|white|charcoal|black">`.
 - The cropper tool may use red for real errors. Nothing else gets a semantic colour.
-- The hero is the one exception to the tone variables: it is a photograph, so its words, glass
-  window and veil are styled directly in white and the photo's sky blue.
+- The hero and the cropper page are the exceptions to the tone variables: they sit on a photograph,
+  so their words, glass window and veil are styled directly in white and the photo's sky blue.
+- The base tones, radii, shadow and easing live in `src/tokens.css`, shared with the desktop app.
 
 ## Type
 
@@ -76,11 +77,16 @@ radii or spacing values.
 - Everything else is quiet and purposeful, 180 to 600ms with `--ease-out`.
 - `data-reveal` gives the scroll-driven fade-up. Apply it to blocks, not to every element.
 
-## Empty states (cropper)
+## The tool (cropper and desktop app)
 
-Top to bottom, with the page structure left in place: a grey picture about 120px wide that
-previews the content, 16px gap, a specific 16px title, one line on why and what next in 14px
-grey, 20px gap, a primary pill and a secondary link.
+Both run the same interface, from `src/components/workbench`: a bar with pill tabs, the queue as
+rows on the left, the picture with its crop marks on the right, then the one slider, the few
+options and the action. It is what the landing's `AppWindow` promises, so keep them alike. The
+parts read only the tone variables, which is how one set works on the desktop app's plain surface
+and on the cropper's dark glass.
+
+Empty states say what to do in a thin serif line with a faded second phrase, then pills. No
+pictures, no paragraphs.
 
 ## Must not break
 

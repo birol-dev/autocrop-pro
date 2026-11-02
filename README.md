@@ -102,7 +102,7 @@ The backend runs `ffmpeg -vf cropdetect` on 30 sample frames and parses the `cro
 
 ```bash
 # Clone the repository
-git clone https://github.com/eact6/autocrop-pro
+git clone https://github.com/birol-dev/autocrop-pro
 cd autocrop-pro
 
 # Install frontend dependencies

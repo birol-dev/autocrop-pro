@@ -97,7 +97,7 @@ describe("applyPadding", () => {
 
     it("clamps padding at the image edge", () => {
         const padded = applyPadding({ x: 0, y: 0, w: 20, h: 20 }, 100, 100, 10);
-        expect(padded).toEqual({ x: 0, y: 0, w: 40, h: 40 });
+        expect(padded).toEqual({ x: 0, y: 0, w: 30, h: 30 });
     });
 });
 

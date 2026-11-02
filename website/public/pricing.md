@@ -22,6 +22,6 @@ Runs entirely in the browser tab. No account. Files are not uploaded to AutoCrop
 
 ## Download
 
-https://github.com/eact6/autocrop-pro/releases
+https://github.com/birol-dev/autocrop-pro/releases
 
 No subscription, no license key, no in-app purchases, no cloud tier.

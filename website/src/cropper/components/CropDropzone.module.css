@@ -1,26 +1,36 @@
-.root[data-activate-on-click] {
-  border: 1px dashed var(--hairline);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  color: var(--ink);
-  transition:
-    border-color 180ms var(--ease-out),
-    background-color 180ms var(--ease-out);
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  text-align: center;
 }
 
-.root[data-activate-on-click]:hover {
-  border-color: var(--fade);
+.root[data-activate-on-click] {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: clamp(24px, 5svh, 48px) 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  transition: box-shadow 180ms var(--ease-out);
 }
 
 .root[data-activate-on-click][data-accept] {
-  border-style: solid;
-  border-color: var(--ink);
-  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 .root[data-activate-on-click][data-reject] {
-  border-color: var(--mantine-color-red-6);
-  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--mantine-color-red-5);
 }
 
 .root[data-activate-on-click][data-disabled] {
@@ -28,37 +38,20 @@
   cursor: default;
 }
 
-.root:not([data-compact]) {
-  padding: clamp(36px, 7vw, 64px) 24px;
-  text-align: center;
-}
-
-.root[data-compact] {
-  padding: 14px 16px;
-  text-align: left;
-}
-
-.empty {
+.zone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 24px;
   pointer-events: none;
 }
 
-.dropTitle {
+.title {
+  max-width: 16ch;
   margin: 0;
-  font-size: clamp(18px, 1.1rem + 0.4vw, 22px);
-  font-weight: 500;
-  line-height: 1.25;
-}
-
-.dropText {
-  margin: 0;
-  max-width: 46ch;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--muted);
+  font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  font-weight: 300;
+  line-height: 1.06;
 }
 
 .pill {
@@ -66,7 +59,7 @@
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 20px;
+  padding: 0 22px;
   border-radius: 999px;
   background: var(--ink);
   color: var(--surface);
@@ -75,81 +68,71 @@
   white-space: nowrap;
 }
 
-.empty .pill {
-  margin-top: 6px;
+.alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .formats {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--fade);
 }
 
-.compact {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.compactText {
-  min-width: 0;
-}
-
-.compactTitle {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.compactHint {
-  margin: 2px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--muted);
-}
-
-.compact .pill {
+/* In the queue's header: a pill that also takes drops. */
+.compact[data-activate-on-click] {
   flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  transition: box-shadow 180ms var(--ease-out);
 }
 
-.sampleRow {
-  display: flex;
-  flex-wrap: wrap;
+.compact[data-activate-on-click][data-accept] {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.compact[data-activate-on-click][data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.compactInner {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px 16px;
-  margin-top: 16px;
+  gap: 6px;
+  min-height: 36px;
+  padding-inline: 14px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-.sampleText {
-  font-size: 13px;
-  color: var(--muted);
+.fullScreen {
+  background: rgba(14, 20, 30, 0.7);
+  color: #fff;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .full {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   min-height: 220px;
-  text-align: center;
   pointer-events: none;
 }
 
 .fullTitle {
   margin: 0;
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1.25;
-}
-
-.fullText {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--muted);
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
+  font-weight: 200;
+  letter-spacing: -0.03em;
 }

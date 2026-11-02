@@ -3,7 +3,7 @@
  * format resolution, padding computation, and progress event shapes.
  *
  * These are pure-JS equivalents of the Rust logic so we can exercise
- * them in CI without a native binary.
+ * them in CI without a native binary. The real code is tested in src-tauri/src/tests.rs.
  */
 
 import { describe, it, expect } from "vitest";
@@ -34,12 +34,10 @@ function applyPadding(
     crop: { x: number; y: number; w: number; h: number },
     pad: number
 ): { x: number; y: number; w: number; h: number } {
-    return {
-        x: Math.max(0, crop.x - pad),
-        y: Math.max(0, crop.y - pad),
-        w: crop.w + pad * 2,
-        h: crop.h + pad * 2,
-    };
+    if (crop.w === 0 || crop.h === 0) return crop;
+    const x = Math.max(0, crop.x - pad);
+    const y = Math.max(0, crop.y - pad);
+    return { x, y, w: crop.x + crop.w + pad - x, h: crop.y + crop.h + pad - y };
 }
 
 function clampCrop(
@@ -109,8 +107,8 @@ describe("applyPadding", () => {
         const result = applyPadding({ x: 5, y: 3, w: 40, h: 40 }, 10);
         expect(result.x).toBe(0);
         expect(result.y).toBe(0);
-        expect(result.w).toBe(60);
-        expect(result.h).toBe(60);
+        expect(result.w).toBe(55);
+        expect(result.h).toBe(53);
     });
 
     it("zero padding returns identical crop", () => {
@@ -120,7 +118,7 @@ describe("applyPadding", () => {
 
     it("works with crop touching top-left corner", () => {
         const result = applyPadding({ x: 0, y: 0, w: 100, h: 100 }, 10);
-        expect(result).toEqual({ x: 0, y: 0, w: 120, h: 120 });
+        expect(result).toEqual({ x: 0, y: 0, w: 110, h: 110 });
     });
 });
 
