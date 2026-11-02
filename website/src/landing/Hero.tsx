@@ -2,78 +2,59 @@ import { Title } from "@mantine/core";
 import { WindowsLogoIcon } from "@phosphor-icons/react";
 
 import { Fade, Pill } from "../components/Section";
-import { HERO_VIDEO, MEDIA } from "../content/media";
+import { useScrub } from "../components/useScrub";
+import { MEDIA } from "../content/media";
 import { RELEASES_URL } from "../content/site";
+import AppWindow from "./AppWindow";
 import classes from "./Hero.module.css";
 
+/**
+ * The headline sits in the sky of a landscape, with the app rising out of the
+ * bottom of the screen. Scrolling lifts the window to the centre, plays a batch
+ * through it, then lets dusk fall so the page runs on into the black section below.
+ */
 export default function Hero() {
+  const track = useScrub<HTMLElement>();
+
   return (
     <section
+      ref={track}
       id="hero"
       data-tone="black"
       data-mantine-color-scheme="dark"
-      className={classes.hero}
+      className={classes.track}
       aria-labelledby="hero-title"
     >
-      <div className={classes.topBar} />
-
       <div className={classes.stage}>
-        <div className={classes.picture}>
-          <div className={classes.mediaWrap}>
-            {HERO_VIDEO ? (
-              <video
-                className={classes.media}
-                src={HERO_VIDEO}
-                poster={MEDIA.coast.src}
-                muted
-                playsInline
-                autoPlay
-                loop
-                aria-hidden="true"
-              />
-            ) : (
-              <img
-                className={classes.media}
-                src={MEDIA.coast.src}
-                alt={MEDIA.coast.alt}
-                loading="eager"
-                decoding="async"
-              />
-            )}
-          </div>
+        <img className={classes.photo} src={MEDIA.lake.src} alt={MEDIA.lake.alt} loading="eager" decoding="async" />
+        <div className={classes.veil} aria-hidden="true" />
+        <div className={classes.night} aria-hidden="true" />
 
-          <div className={classes.brackets} aria-hidden="true">
-            <span className={`${classes.bracket} ${classes.topLeft}`} />
-            <span className={`${classes.bracket} ${classes.topRight}`} />
-            <span className={`${classes.bracket} ${classes.bottomLeft}`} />
-            <span className={`${classes.bracket} ${classes.bottomRight}`} />
+        <div className={classes.copy}>
+          <Title order={1} id="hero-title" className={classes.title}>
+            Drop a folder.
+            <br />
+            <Fade>Lose the black bars.</Fade>
+          </Title>
+          <p className={classes.note}>Removes black bars from photos and videos. Free and private.</p>
+          <div className={classes.pills}>
+            <Pill href="/cropper/" size="lg">
+              Crop in your browser
+            </Pill>
+            <Pill
+              href={RELEASES_URL}
+              size="lg"
+              variant="soft"
+              className={classes.glass}
+              icon={<WindowsLogoIcon size={16} weight="fill" />}
+            >
+              Download for Windows
+            </Pill>
           </div>
         </div>
-      </div>
 
-      <div className={classes.bottomBar}>
-        <div className={classes.grid}>
-          <Title order={1} id="hero-title" className={classes.title}>
-            Strip letterboxes from 500 files.{" "}
-            <br />
-            <Fade>No uploads. No scripts.</Fade>
-          </Title>
-
-          <div className={classes.actions}>
-            <p className={classes.note}>
-              Crop a few files in your browser, or download the Windows app for huge offline batches.
-            </p>
-            <div className={classes.pills}>
-              <Pill href="/cropper/">Crop in your browser</Pill>
-              <Pill
-                href={RELEASES_URL}
-                variant="soft"
-                icon={<WindowsLogoIcon size={16} weight="fill" />}
-              >
-                Download for Windows
-              </Pill>
-            </div>
-          </div>
+        <div className={classes.window}>
+          <AppWindow />
         </div>
       </div>
     </section>

@@ -10,53 +10,8 @@
   padding-inline: var(--page-margin);
 }
 
-/* `01 ─────── Label` */
-.indexLine {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: var(--space-block);
-  font-size: 13px;
-  line-height: 1;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.rule {
-  flex: 1;
-  height: 1px;
-  background: var(--hairline);
-}
-
 .fade {
   color: var(--fade);
-}
-
-/* The 1px gap shows the hairline colour through, so rules survive any column count. */
-.cells {
-  display: grid;
-  grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
-  gap: 1px;
-  background: var(--hairline);
-  border-block: 1px solid var(--hairline);
-
-  @media (min-width: $mantine-breakpoint-md) {
-    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  }
-}
-
-.cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 20px;
-  background: var(--surface);
-}
-
-.cell[data-tall] {
-  justify-content: flex-end;
-  min-height: clamp(180px, 38vw, 540px);
 }
 
 .pill {

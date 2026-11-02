@@ -1,62 +1,30 @@
-.grid {
-  display: grid;
-  gap: clamp(32px, 5vw, 72px);
+.wrap {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-
-  @media (min-width: $mantine-breakpoint-md) {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  }
+  gap: var(--space-block);
 }
 
 .copy {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-group);
+  text-align: center;
 }
 
 .title {
+  max-width: 18ch;
   margin: 0;
-}
-
-.lead {
-  max-width: 48ch;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-.link {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-
-  @media (hover: hover) {
-    &:hover {
-      color: var(--muted);
-    }
-  }
-}
-
-.panel {
-  padding: clamp(18px, 3vw, 40px);
-  background: var(--panel);
-  border-radius: var(--radius-panel);
 }
 
 .window {
+  width: 100%;
+  max-width: 860px;
   overflow: hidden;
   background: var(--surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-float);
-}
-
-.bar {
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--hairline);
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .body {
@@ -145,21 +113,13 @@
 }
 
 .slider.slider {
-  margin-block: 22px 32px;
+  margin-block: 22px;
   --slider-track-bg: var(--hairline);
-}
-
-.markLabel.markLabel {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .status {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .detail {
@@ -168,9 +128,4 @@
   gap: 8px;
   font-size: 14px;
   color: var(--muted);
-}
-
-.verdict {
-  font-size: 14px;
-  color: var(--ink);
 }

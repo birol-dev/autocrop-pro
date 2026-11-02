@@ -1,35 +1,66 @@
 .chapter {
-  position: relative;
   overflow: hidden;
 }
 
-.copy {
-  position: relative;
-  z-index: 1;
+.scene {
+  --p: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-block);
+}
+
+:global(:root[data-motion='on']) .scene {
+  --p: 0;
+}
+
+.frames {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* The three pictures slide in from the page edges and settle into a fan. */
+.frame.frame {
+  flex: none;
+  width: clamp(112px, 20vw, 220px);
+  opacity: clamp(0, calc(var(--p) * 2), 1);
+  will-change: translate;
+}
+
+.frameA {
+  translate: calc((1 - var(--p)) * -50vw) 6%;
+  margin-right: -3%;
+}
+
+.frameB {
+  z-index: 1;
+  translate: 0 calc((1 - var(--p)) * 40px);
+}
+
+.frameC {
+  translate: calc((1 - var(--p)) * 50vw) 6%;
+  margin-left: -3%;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: var(--space-group);
+  text-align: center;
 }
 
 .title {
-  max-width: 18ch;
   margin: 0;
   font-size: clamp(2.5rem, 1.9rem + 3.6vw, 6.25rem);
   line-height: 0.98;
 }
 
-.lead {
-  max-width: 52ch;
-  margin: 0;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
 .actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
   margin-top: 4px;
 }
@@ -37,50 +68,7 @@
 .note {
   max-width: 60ch;
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  color: var(--fade);
-}
-
-.frames {
-  display: none;
-}
-
-@media (min-width: $mantine-breakpoint-lg) {
-  .copy {
-    max-width: 54%;
-  }
-
-  .frames {
-    display: block;
-    position: absolute;
-    top: 50%;
-    right: calc(var(--page-margin) * -1);
-    width: min(42vw, 560px);
-    height: 540px;
-    transform: translateY(-50%);
-  }
-
-  .frame.frame {
-    position: absolute;
-    width: clamp(200px, 17vw, 260px);
-  }
-
-  .frameA {
-    top: 0;
-    right: 12%;
-    width: clamp(200px, 16vw, 240px);
-  }
-
-  .frameB {
-    top: 165px;
-    right: -12%;
-    width: clamp(210px, 17vw, 260px);
-  }
-
-  .frameC {
-    top: 330px;
-    right: 26%;
-    width: clamp(200px, 15vw, 230px);
-  }
+  color: var(--muted);
 }

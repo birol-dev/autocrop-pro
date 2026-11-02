@@ -29,10 +29,40 @@
   -webkit-backdrop-filter: blur(18px) saturate(1.6);
   backdrop-filter: blur(18px) saturate(1.6);
 
+  transition:
+    background-color 240ms var(--ease-out),
+    box-shadow 240ms var(--ease-out),
+    color 240ms var(--ease-out);
+
   @mixin dark {
     background: rgba(20, 20, 20, 0.72);
     color: #ededed;
   }
+}
+
+/* Over the hero the nav melts into the picture; the pills come back once it has scrolled away. */
+.header[data-on-hero] {
+  --fade: rgba(255, 255, 255, 0.72);
+}
+
+.header[data-on-hero] .burger {
+  --burger-color: #fff;
+  --mantine-color-text: #fff;
+}
+
+.header[data-on-hero] .logoPill,
+.header[data-on-hero] .nav,
+.header[data-on-hero] .actions {
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.header[data-on-hero] .downloadWrap a {
+  background: #fff;
+  color: #141414;
 }
 
 .logoPill {

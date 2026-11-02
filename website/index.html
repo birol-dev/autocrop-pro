@@ -14,6 +14,8 @@
       var dark = s === "dark" || (s === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
       document.documentElement.setAttribute("data-mantine-color-scheme", dark ? "dark" : "light");
     } catch (e) {}
+    // Scroll-scrubbed scenes opt in here, so reduced-motion and no-JS visitors get the static layout.
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.setAttribute("data-motion", "on");
   </script>
 
   <title>AutoCrop Pro Batch Crop Black Borders Offline (Free, Open Source)</title>

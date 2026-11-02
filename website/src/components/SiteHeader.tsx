@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Burger, Drawer, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { DownloadSimpleIcon, GithubLogoIcon } from "@phosphor-icons/react";
@@ -11,14 +12,32 @@ import classes from "./SiteHeader.module.css";
 type SiteHeaderProps = {
   /** Highlights the matching nav link. */
   current?: "cropper";
+  /** Drops the pills and turns white while the page's `#hero` is behind the header. */
+  overHero?: boolean;
 };
 
-export default function SiteHeader({ current }: SiteHeaderProps) {
+export default function SiteHeader({ current, overHero }: SiteHeaderProps) {
   const [opened, { toggle, close }] = useDisclosure(false);
+  const [onHero, setOnHero] = useState(Boolean(overHero));
+
+  useEffect(() => {
+    if (!overHero) return;
+    const update = () => {
+      const hero = document.getElementById("hero");
+      setOnHero(Boolean(hero) && hero!.getBoundingClientRect().bottom > 80);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [overHero]);
 
   return (
     <>
-      <header className={classes.header}>
+      <header className={classes.header} data-on-hero={onHero || undefined}>
         <div className={classes.logoPill}>
           <Logo />
         </div>

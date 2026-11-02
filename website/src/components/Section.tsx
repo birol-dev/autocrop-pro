@@ -8,10 +8,6 @@ type ChapterProps = {
   id?: string;
   /** Background swap that marks the chapter break. */
   tone?: Tone;
-  /** Renders the numbered full-width index line, e.g. "01". */
-  index?: string;
-  /** Short label on the index line. */
-  label?: string;
   /** Accessible name for the section landmark (id of its heading). */
   labelledBy?: string;
   /** Drop the page margins so the content can run edge to edge. */
@@ -23,7 +19,7 @@ type ChapterProps = {
 };
 
 /** A page section: its own tone, the page margins and the chapter rhythm. */
-export function Chapter({ id, tone = "white", index, label, labelledBy, bleed, flushTop, className, children }: ChapterProps) {
+export function Chapter({ id, tone = "white", labelledBy, bleed, flushTop, className, children }: ChapterProps) {
   const dark = tone === "charcoal" || tone === "black";
   return (
     <section
@@ -34,24 +30,8 @@ export function Chapter({ id, tone = "white", index, label, labelledBy, bleed, f
       data-flush-top={flushTop || undefined}
       className={[classes.chapter, className].filter(Boolean).join(" ")}
     >
-      {index && (
-        <div className={classes.margins}>
-          <IndexLine index={index} label={label} />
-        </div>
-      )}
       {bleed ? children : <div className={classes.margins}>{children}</div>}
     </section>
-  );
-}
-
-/** `01 ─────── Label`, the numbered line that opens a chapter. */
-export function IndexLine({ index, label }: { index: string; label?: string }) {
-  return (
-    <div className={classes.indexLine}>
-      <span>{index}</span>
-      <span className={classes.rule} aria-hidden="true" />
-      {label && <span>{label}</span>}
-    </div>
   );
 }
 
@@ -63,37 +43,6 @@ export function Margins({ className, children }: { className?: string; children:
 /** The secondary words of a headline, faded instead of bolded. */
 export function Fade({ children }: { children: ReactNode }) {
   return <span className={classes.fade}>{children}</span>;
-}
-
-/** Hairline grid: columns snap to the skeleton and 1px rules separate the cells. */
-export function Cells({
-  cols = 4,
-  colsMobile = 1,
-  className,
-  children,
-}: {
-  cols?: number;
-  colsMobile?: number;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={[classes.cells, className].filter(Boolean).join(" ")}
-      style={{ "--cols": cols, "--cols-mobile": colsMobile } as CSSProperties}
-    >
-      {children}
-    </div>
-  );
-}
-
-/** One cell of a `Cells` grid. `tall` pins the content to the bottom of an empty cell. */
-export function Cell({ tall, className, children }: { tall?: boolean; className?: string; children: ReactNode }) {
-  return (
-    <div className={[classes.cell, className].filter(Boolean).join(" ")} data-tall={tall || undefined}>
-      {children}
-    </div>
-  );
 }
 
 type PillVariant = "solid" | "soft" | "plain";

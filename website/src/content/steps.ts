@@ -1,18 +1,18 @@
 /** The 3-step workflow, shared by the page and the HowTo JSON-LD. */
 export const STEPS = [
   {
-    name: "Drop your files",
-    body: "Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or any supported format onto the app. Hundreds at once.",
-    text: "Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or other supported formats onto the app. Process hundreds at once.",
+    name: "Drop your folder",
+    body: "Photos, videos, or both.",
+    text: "Drag a folder of photos and videos onto the app. Hundreds of files can go in at once.",
   },
   {
-    name: "Preview & tune",
-    body: "Click any file to see the crop overlay. Adjust tolerance until borders snap perfectly — without touching pixel math.",
-    text: "Click any file to see the crop overlay. Adjust the tolerance slider until borders snap perfectly without manual pixel math.",
+    name: "Check the crop",
+    body: "The bars are found for you.",
+    text: "AutoCrop Pro detects the black bars and shows the crop on each file. Adjust the tolerance slider if one looks off.",
   },
   {
-    name: "Batch export",
-    body: "Hit process. Cropped files land in Documents/AutoCrop_Output/. Originals stay untouched.",
-    text: "Click process. Cropped files save to Documents/AutoCrop_Output/. Originals stay untouched unless you enable delete originals.",
+    name: "Get clean files",
+    body: "Your originals stay untouched.",
+    text: "Click process. Cropped files save to a new folder and your originals stay untouched.",
   },
 ] as const;

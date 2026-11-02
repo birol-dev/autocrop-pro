@@ -2,10 +2,10 @@
 
 A monochrome gallery frame that stays quiet so the media supplies 100% of the colour.
 AutoCrop Pro is a tool that removes black bars, so the black letterbox bar is the site's
-one recurring idea: the hero and the closing section are literally letterboxed frames.
+one recurring idea: the hero's glass app window plays a letterboxed clip whose bars scroll away.
 
 Tokens live in `src/global.css`, the Mantine theme in `src/theme.ts`, and the shared
-building blocks in `src/components/Section.tsx`. Use them. Do not invent new colours,
+building blocks in `src/components/Section.tsx` and `src/components/useScrub.ts`. Use them. Do not invent new colours,
 radii or spacing values.
 
 ## Colour
@@ -16,6 +16,8 @@ radii or spacing values.
   text or backgrounds. Do not use `--mantine-color-brand-*`.
 - Sections swap background as chapter breaks through `<Chapter tone="paper|white|charcoal|black">`.
 - The cropper tool may use red for real errors. Nothing else gets a semantic colour.
+- The hero is the one exception to the tone variables: it is a photograph, so its words, glass
+  window and veil are styled directly in white and the photo's sky blue.
 
 ## Type
 
@@ -31,15 +33,20 @@ radii or spacing values.
 
 ## Layout
 
-- Skeleton: 4 columns inside `--page-margin` (65px desktop, 20px mobile). Sections use
-  whatever column count they need: 2, 3 or 4, or none.
-- `<Cells cols colsMobile>` and `<Cell tall>` draw the 1px hairline grid. A tall cell pins its
-  content to the bottom of an empty 540px cell (shrinks on mobile).
-- `<Chapter index="01" label="...">` opens with a numbered full-width index line.
+- Everything sits on the page's centre line: headings, copy, actions, the footer. Multi-line
+  answers (the FAQ) stay left-aligned inside a centered column, because centered paragraphs
+  are hard to read.
+- Page margin is `--page-margin` (65px desktop, 20px mobile).
 - Spacing: tiny inside a unit (4 to 8px), medium between text and its visual
   (`--space-group`, `--space-block`), huge between topics (`--space-item`, `--space-chapter`).
 - Space is the first divider, then background tint, then a hairline. No card borders.
-- A few visuals break the page edge on purpose. Everything else stays aligned.
+
+## Copy
+
+- Say less. One idea per section, one short sentence under a heading, and no spec lists on the
+  page. Technical detail belongs in the FAQ and `public/llms.txt`.
+- Plain words over engineering words: "bars", not "letterbox boundaries"; "slider", not
+  "tolerance sweep". No claim the product can't back up, and no invented numbers.
 
 ## Surfaces
 
@@ -52,14 +59,21 @@ radii or spacing values.
 ## Media
 
 - `<MediaFrame>` with entries from `src/content/media.ts`. Never hardcode a media path.
-- No text ever sits on a picture. Captions go underneath. Only non-text overlays such as
-  crop brackets may sit on top of a picture.
+- No text sits on a picture, with one exception: the hero's words sit on the empty sky of its
+  landscape, under a veil that keeps white text readable. Everywhere else captions go
+  underneath, and only non-text overlays such as crop brackets may sit on top of a picture.
 - Floating frames tilt 5 to 10 degrees and run partly off screen.
 - Mock windows show that the product works: pictures say what it is for.
 
 ## Motion
 
-- Quiet and purposeful, 180 to 600ms with `--ease-out`. Honour `prefers-reduced-motion`.
+- The page is scroll-scrubbed: the big scenes play forwards and backwards with the scrollbar.
+  `useScrub` writes progress to the `--p` CSS variable (0 to 1) and all choreography lives in CSS,
+  using only `transform`, `opacity` and `clip-path`.
+- A pinned scene is a tall track with a sticky first child. Gate its track height and sticky
+  behaviour behind `:root[data-motion='on']`, which `index.html` sets before first paint. Without
+  it (reduced motion, no JS) the same markup must read as a normal static section.
+- Everything else is quiet and purposeful, 180 to 600ms with `--ease-out`.
 - `data-reveal` gives the scroll-driven fade-up. Apply it to blocks, not to every element.
 
 ## Empty states (cropper)
@@ -72,8 +86,7 @@ grey, 20px gap, a primary pill and a secondary link.
 
 - Prerendering: components render on the server, so do not touch `window`, `document` or
   `localStorage` during render. Client-only work goes in `useEffect`.
-- Section ids used by navigation and the footer: `features`, `how-it-works`, `simulator`,
-  `compare-tools`, `faq`, `download`.
+- Section ids used by navigation and the footer: `how-it-works`, `simulator`, `faq`, `download`.
 - The `h1` is unique to the page. Sections keep their `aria-labelledby` heading ids.
 - Interactive demos stay keyboard accessible. Tap targets are at least 44px.
 - No horizontal page scroll at any width. Check 375px.

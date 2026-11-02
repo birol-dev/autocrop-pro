@@ -7,18 +7,15 @@ import classes from "./Faq.module.css";
 
 export default function Faq() {
   return (
-    <Chapter tone="white" id="faq" index="11" label="FAQ" labelledBy="faq-title">
-      <div className={classes.grid}>
-        <div className={classes.head}>
-          <Title order={2} id="faq-title">
-            Common <Fade>questions</Fade>
-          </Title>
-        </div>
+    <Chapter tone="white" id="faq" labelledBy="faq-title">
+      <div className={classes.wrap}>
+        <Title order={2} id="faq-title" className={classes.title}>
+          Fair <Fade>questions</Fade>
+        </Title>
 
-        <div data-reveal>
+        <div className={classes.list} data-reveal>
           <Accordion
             variant="default"
-            defaultValue="faq-0"
             chevron={<PlusIcon size={22} weight="light" />}
             chevronSize={28}
             classNames={{

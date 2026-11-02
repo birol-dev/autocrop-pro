@@ -1,0 +1,35 @@
+.track {
+  --p: 0;
+  background: var(--surface);
+}
+
+:global(:root[data-motion='on']) .track {
+  height: 160svh;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70svh;
+  padding: var(--space-item) var(--page-margin);
+}
+
+:global(:root[data-motion='on']) .stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+
+.text {
+  max-width: 20ch;
+  margin: 0;
+  font-size: clamp(2.25rem, 1.4rem + 4vw, 5.5rem);
+  line-height: 1.08;
+  text-align: center;
+}
+
+/* Each word lights up in turn over the same stretch of scroll. The 0.9 leaves the finished line on screen for a beat. */
+:global(:root[data-motion='on']) .word {
+  opacity: clamp(0.14, calc((var(--p) / 0.9 * (var(--count) + 3) - var(--i)) / 3), 1);
+}

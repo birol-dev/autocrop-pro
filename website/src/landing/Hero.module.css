@@ -1,248 +1,142 @@
-.hero {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.track {
+  --p: 0;
+  /* One scrollbar, four acts: the window rises, a batch runs, the bars go, dusk falls. */
+  --rise: clamp(0, calc(var(--p) / 0.4), 1);
+  --work: clamp(0, calc((var(--p) - 0.32) / 0.46), 1);
+  --crop: clamp(0, calc((var(--p) - 0.38) / 0.3), 1);
+  --night: clamp(0, calc((var(--p) - 0.84) / 0.16), 1);
+
+  --stage-h: max(100svh, 620px);
+  /* Width over height. Unitless, so the window height can be derived from its width. */
+  --win-ratio: 1.85;
+  --win-w: min(100vw - var(--page-margin) * 2, 960px, (var(--stage-h) - 150px) * var(--win-ratio));
+  --win-h: calc(var(--win-w) / var(--win-ratio));
+  /* How much of the window shows before you scroll. */
+  --peek: calc(var(--stage-h) * 0.42);
+  --win-top: calc(var(--stage-h) - var(--peek));
+  --photo-top: 24%;
   background: #000;
-  color: var(--ink);
+  scroll-margin-top: -96px;
 }
 
-.topBar {
-  flex: none;
-  height: 96px;
+/* Portrait screens: a taller window, stacked inside, with more room above it for the words. */
+@media (max-aspect-ratio: 1 / 1) {
+  .track {
+    --win-ratio: 0.8;
+    --win-w: min(100vw - var(--page-margin) * 2, 560px, (var(--stage-h) - 150px) * var(--win-ratio));
+    --peek: calc(var(--stage-h) * 0.4);
+    --photo-top: 34%;
+  }
+}
+
+:global(:root[data-motion='on']) .track {
+  height: 220svh;
 }
 
 .stage {
   position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.picture {
-  --bar-top: 96px;
-  --bar-bottom: 340px;
-  position: relative;
-  width: 100%;
-  aspect-ratio: 12 / 5;
-}
-
-.mediaWrap {
-  position: absolute;
-  inset: 0;
+  height: var(--stage-h);
   overflow: hidden;
-  background: #000;
+  /* The photo's own sky colour, carried on above the top of the picture. */
+  background: #708daa;
 }
 
-.media {
-  display: block;
+:global(:root[data-motion='on']) .stage {
+  position: sticky;
+  top: 0;
+}
+
+/* Sits low in the stage so the peak lands under the buttons, not behind the words. */
+.photo {
+  position: absolute;
+  top: var(--photo-top);
+  left: 0;
   width: 100%;
-  height: 100%;
+  min-height: 76%;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  transform-origin: center;
-  animation: drift 24s ease-in-out infinite alternate;
+  object-position: 46% 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%);
+  mask-image: linear-gradient(to bottom, transparent, #000 10%);
+  transform: translateY(calc(var(--p) * -5svh));
+  will-change: transform;
 }
 
-@keyframes drift {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.04);
-  }
-}
-
-.brackets {
+/* Deepens the sky so white text holds its contrast. */
+.veil {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(16, 34, 62, 0.62), rgba(16, 34, 62, 0.34) 45%, rgba(16, 34, 62, 0) 68%);
 }
 
-.bracket {
+.night {
   position: absolute;
-  width: clamp(16px, 2.4vw, 28px);
-  height: clamp(16px, 2.4vw, 28px);
-  border: 0 solid rgba(255, 255, 255, 0.92);
-  animation-duration: 8s;
-  animation-timing-function: var(--ease-out);
-  animation-iteration-count: infinite;
-}
-
-.topLeft {
-  top: 0;
-  left: 0;
-  border-top-width: 1px;
-  border-left-width: 1px;
-  animation-name: snap-top;
-}
-
-.topRight {
-  top: 0;
-  right: 0;
-  border-top-width: 1px;
-  border-right-width: 1px;
-  animation-name: snap-top;
-}
-
-.bottomLeft {
-  bottom: 0;
-  left: 0;
-  border-bottom-width: 1px;
-  border-left-width: 1px;
-  animation-name: snap-bottom;
-}
-
-.bottomRight {
-  bottom: 0;
-  right: 0;
-  border-bottom-width: 1px;
-  border-right-width: 1px;
-  animation-name: snap-bottom;
-}
-
-@keyframes snap-top {
-  0% {
-    transform: translateY(calc(-1 * var(--bar-top)));
-    opacity: 0;
-  }
-  4%,
-  14% {
-    transform: translateY(calc(-1 * var(--bar-top)));
-    opacity: 1;
-  }
-  24%,
-  92% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-}
-
-@keyframes snap-bottom {
-  0% {
-    transform: translateY(var(--bar-bottom));
-    opacity: 0;
-  }
-  4%,
-  14% {
-    transform: translateY(var(--bar-bottom));
-    opacity: 1;
-  }
-  24%,
-  92% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-}
-
-.bottomBar {
-  position: relative;
-  z-index: 1;
-  padding: 24px var(--page-margin) 32px;
+  inset: 0;
   background: #000;
+  opacity: var(--night);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: end;
-  gap: 24px;
+.copy {
+  --fade: rgba(255, 255, 255, 0.72);
+  position: absolute;
+  top: clamp(84px, 12svh, 116px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2.2svh, 22px);
+  width: calc(100vw - var(--page-margin) * 2);
+  color: #fff;
+  text-align: center;
+  opacity: calc(1 - var(--rise) * 2);
+  translate: -50% 0;
+  transform: translateY(calc(var(--rise) * -34svh));
+  will-change: transform;
 }
 
 .title {
   margin: 0;
-  font-size: clamp(2.25rem, 10.6vw, 3rem);
+  font-size: clamp(2.5rem, min(10.5vw, 9svh), 5.75rem);
+  font-weight: 300;
   line-height: 1;
   letter-spacing: -0.03em;
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  text-shadow: 0 2px 32px rgba(16, 34, 62, 0.35);
 }
 
 .note {
-  max-width: 34ch;
+  max-width: 50ch;
   margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: clamp(15px, 1.35vw, 18px);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.88);
+  text-wrap: balance;
 }
 
 .pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
 }
 
-@media (min-width: $mantine-breakpoint-md) {
-  .hero {
-    height: 100svh;
-    min-height: 620px;
-  }
-
-  .stage {
-    flex: 1 1 0;
-    min-height: 0;
-  }
-
-  .picture {
-    --bar-bottom: 220px;
-    position: absolute;
-    inset: 0;
-    width: auto;
-    aspect-ratio: auto;
-  }
-
-  .bottomBar {
-    display: flex;
-    align-items: flex-end;
-    padding-block: 28px 32px;
-  }
-
-  .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(16px, 2vw, 24px);
-    width: 100%;
-  }
-
-  .title {
-    grid-column: 1 / 4;
-    font-size: clamp(2.75rem, 4.9vw, 5.25rem);
-  }
-
-  .actions {
-    grid-column: 4;
-    align-self: end;
-  }
-
-  .pills {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .pills a {
-    padding-inline: 16px;
-  }
+.glass.glass.glass {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .media {
-    animation: none;
-  }
-
-  .bracket {
-    animation: none;
-    transform: none;
-    opacity: 1;
-  }
+/* Rests low with its bottom off screen, then rises to the exact centre. */
+.window {
+  position: absolute;
+  top: var(--win-top);
+  left: 50%;
+  width: var(--win-w);
+  height: var(--win-h);
+  translate: -50% 0;
+  transform: translateY(calc(var(--rise) * -1 * (var(--win-top) - (var(--stage-h) - var(--win-h)) / 2)))
+    scale(calc(0.95 + var(--rise) * 0.05));
+  transform-origin: 50% 0;
+  will-change: transform;
 }

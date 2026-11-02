@@ -1,60 +1,48 @@
-import type { ReactNode } from "react";
 import { Title } from "@mantine/core";
 
-import { Chapter, Fade } from "../components/Section";
+import Scene from "../components/Scene";
+import { useScrub } from "../components/useScrub";
+import { MEDIA } from "../content/media";
+import { STEPS } from "../content/steps";
 import classes from "./Steps.module.css";
 
-type Step = { title: string; body: ReactNode };
-
-const STEPS: Step[] = [
-  {
-    title: "Drop your files",
-    body: "Drag a folder of JPG, PNG, WEBP, MP4, MOV, MKV, or any supported format onto the app. Hundreds at once.",
-  },
-  {
-    title: "Preview & tune",
-    body: "Click any file to see the crop overlay. Adjust tolerance until borders snap perfectly — without touching pixel math.",
-  },
-  {
-    title: "Batch export",
-    body: (
-      <>
-        Hit process. Cropped files land in <code className={classes.path}>Documents/AutoCrop_Output/</code>. Originals
-        stay untouched.
-      </>
-    ),
-  },
-];
-
+/** One pinned frame acts out the workflow: files land, the bars are found, the bars are cut. */
 export default function Steps() {
-  return (
-    <Chapter id="how-it-works" tone="paper" index="05" label="Workflow" labelledBy="how-title">
-      <header className={classes.header}>
-        <Title order={2} id="how-title">
-          Three steps. <Fade>No learning curve.</Fade>
-        </Title>
-        <p className={classes.lead}>
-          Same flow in the{" "}
-          <a href="/cropper/" className={classes.link}>
-            browser cropper
-          </a>{" "}
-          or the Windows app. The app is built for hundreds of files at once.
-        </p>
-      </header>
+  const track = useScrub<HTMLElement>();
 
-      <ol className={classes.track}>
-        {STEPS.map((step, i) => (
-          <li key={step.title} className={classes.step} data-reveal>
-            <span className={classes.numeral} aria-hidden="true">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <div className={classes.content}>
-              <Title order={3}>{step.title}</Title>
+  return (
+    <section ref={track} id="how-it-works" data-tone="paper" className={classes.track} aria-labelledby="how-title">
+      <div className={classes.stage}>
+        <h2 id="how-title" className={classes.srOnly}>
+          How it works
+        </h2>
+
+        <ol className={classes.captions}>
+          {STEPS.map((step, i) => (
+            <li key={step.name} className={classes.caption} data-step={i + 1}>
+              <span className={classes.count}>{i + 1} of {STEPS.length}</span>
+              <Title order={3} className={classes.name}>
+                {step.name}
+              </Title>
               <p className={classes.body}>{step.body}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className={classes.scene} aria-hidden="true">
+          <img className={`${classes.file} ${classes.fileA}`} src={MEDIA.harbor.src} alt="" loading="lazy" decoding="async" />
+          <img className={`${classes.file} ${classes.fileB}`} src={MEDIA.rooftops.src} alt="" loading="lazy" decoding="async" />
+          <div className={classes.frame}>
+            <div className={classes.cut}>
+              <Scene mode="full" />
             </div>
-          </li>
-        ))}
-      </ol>
-    </Chapter>
+            <span className={`${classes.mark} ${classes.markTL}`} />
+            <span className={`${classes.mark} ${classes.markTR}`} />
+            <span className={`${classes.mark} ${classes.markBL}`} />
+            <span className={`${classes.mark} ${classes.markBR}`} />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
